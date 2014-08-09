@@ -7,11 +7,13 @@ require 'pp'
 
 #Modifies mapa s.t. it includes the mapb info
 def merge_maps(mapa, mapb)
-    mapb.each do |key, val|
-        if(mapa.has_key? key)
-            mapa[key].concat val
-        else
-            mapa[key] = val
+    if mapb
+        mapb.each do |key, val|
+            if(mapa.has_key?(key) && mapa[key].is_a?(Array))
+                mapa[key].concat val
+            else
+                mapa[key] = val
+            end
         end
     end
 end
@@ -65,6 +67,8 @@ files = `find #{options.root} -type f | grep -e "\\.bc$"`.split
 #p files
 callgraph = Hash.new
 function_props = Hash.new
+class_high = Hash.new
+vtable_information = Hash.new
 
 files.each do |f|
     p "running #{f} file..."
@@ -77,12 +81,16 @@ files.each do |f|
     #puts File.read("sfpv_output.txt")
     nfunc = YAML.load_file "sfpv_output.txt"
 
-    if(ncallgraph)
-        merge_maps(callgraph, ncallgraph)
-    end
-    if(nfunc)
-        merge_maps(function_props, nfunc)
-    end
+    `opt -load ./src/libfoo.so --dummy3 < #{f} > /dev/null 2> sfpv_output.txt`
+    class_nhigh = YAML.load_file "sfpv_output.txt"
+
+    `opt -load ./src/libfoo.so --dummy4 < #{f} > /dev/null 2> sfpv_output.txt`
+    vtable_ninformation = YAML.load_file "sfpv_output.txt"
+
+    merge_maps(callgraph, ncallgraph)
+    merge_maps(function_props, nfunc)
+    merge_maps(class_high, class_nhigh)
+    merge_maps(vtable_information, vtable_ninformation)
 end
 
 symbol_list = Set.new
@@ -91,6 +99,7 @@ callgraph.each do |key,val|
     val.each do |x|
         symbol_list << x
     end
+    val = val.uniq
 end
 
 puts "Demangling #{symbol_list.length} Symbols..."
@@ -183,6 +192,48 @@ property_list.each do |key, value|
     end
 end
 
+#Add Any Known Virtual Calls
+vtable_information.each do |key, value|
+    value.each do |key2, value2|
+        if(value2 != "(none)" && value2 != "__cxa_pure_virtual")
+            new_key = "class.#{key}#{key2}"
+            if(!callgraph.include? new_key)
+                callgraph[new_key] = []
+            end
+            callgraph[new_key] << value2
+            if(!property_list.include? new_key)
+                property_list[new_key] = DeductionChain.new
+                symbol_list << new_key
+            end
+            if(!property_list.include? value2)
+                property_list[value2] = DeductionChain.new
+                symbol_list << value2
+            end
+            property_list[new_key].has_body_p = true
+        end
+    end
+end
+
+#Add Calls Down the hierarchy [THIS IS BUGGED XXX]
+class_high.each do |sub, supers|
+    supers.each do |super_|
+        50.times do |x|
+            testing = "class.#{super_}#{x}"
+            source = "class.#{sub}#{x}"
+            if(symbol_list.include? testing)
+                callgraph[testing] ||= []
+                callgraph[testing] << source
+                symbol_list << source
+                if(!property_list.include? source)
+                    property_list[source] = DeductionChain.new
+                    property_list[source].has_body_p = true
+                end
+                property_list[testing].has_body_p = true
+            end
+        end
+    end
+end
+
 
 
 #Add no source stuff
@@ -220,18 +271,41 @@ end
 
 
 #pp symbol_list
-pp callgraph
+#pp callgraph
 #puts "\n\n\n\n\n"
 #pp function_props
 #pp property_list
+#pp vtable_information
+#pp class_high
 
-#Print realtime stuff
-puts "Realtime stuff:"
-property_list.each do |key, value|
-    if(value.realtime_p)
-        pp demangled_symbols[key]
+#Regenerate Demangled Symbols
+demangled_list = `cat tmp_thing.txt | c++filt`.split("\n")
+demangled_symbols = Hash.new
+#puts "Resulting in #{demangled_list.length} Items..."
+tmp = 0
+symbol_list.each do |x|
+    demangled_symbols[x] = demangled_list[tmp]
+    tmp = tmp + 1
+end
+
+demangled_short = Hash.new
+demangled_symbols.each do |key, value|
+    m = /(\S+)\(/.match(value)
+    if(m)
+        #puts "#{value} -> #{m[1]}"
+        demangled_short[key] = m[1]
+    else
+        demangled_short[key] = value
     end
 end
+
+#Print realtime stuff
+#puts "Realtime stuff:"
+#property_list.each do |key, value|
+#    if(value.realtime_p)
+#        pp demangled_symbols[key]
+#    end
+#end
 
 puts "\n\n"
 
@@ -265,11 +339,13 @@ end
 
 node_list = Hash.new
 color_nodes.each do |key,val|
-    node_list[key] = g.add_node(demangled_short[key], "color"=> val)
+    if(demangled_short.include?(key) && demangled_short[key] && demangled_short[key].length != 0)
+        node_list[key] = g.add_node(demangled_short[key], "color"=> val)
+    end
 end
 
 callgraph.each do |src, dests|
-    dests.each do |dest|
+    dests.uniq.each do |dest|
         if(node_list.include?(src) && node_list.include?(dest))
             g.add_edges(node_list[src], node_list[dest])
         end

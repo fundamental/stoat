@@ -101,8 +101,10 @@ struct DummyPass : public FunctionPass {
                     if(s == "llvm.dbg.value" || s == "llvm.var.annotation"
                             || s == "llvm.stackrestore" || s == "llvm.stacksave"
                             || s == "llvm.va_start"
+                            || s == "llvm.va_end"
                             || strstr(s.c_str(), "llvm.memcpy")
-                            || strstr(s.c_str(), "llvm.memset"))
+                            || strstr(s.c_str(), "llvm.memset")
+                            || strstr(s.c_str(), "llvm.umul"))
                         continue;
                     if(!s.empty())
                         v.push_back(s);
@@ -250,7 +252,7 @@ struct DummyPass3 : public FunctionPass {
                             if(x == super)
                                 not_already_here = false;
                         if(not_already_here)
-                            class_list.push_back(super);
+                            class_list.push_back(super.substr(7, super.length()-8));
                     }
                 }
             }
@@ -299,7 +301,7 @@ struct DummyPass4 : public ModulePass {
         for(unsigned i=2; i<ops; ++i)
         {
             auto op       = v->getOperand(i);
-            const char *fname = NULL;
+            char *fname = NULL;
             if(!dyn_cast<ConstantPointerNull>(op)) {
                 Function *function = NULL;
                 auto alias    = dyn_cast<GlobalAlias>(op->getOperand(0));//dyn_cast<BitCastInst>(op);
@@ -310,8 +312,15 @@ struct DummyPass4 : public ModulePass {
                 else
                     function = dyn_cast<Function>(someth);
                 if(function)
-                    fname = function->getName().str().c_str();
+                    fname = strdup(function->getName().str().c_str());
             }
+            if(fname && strlen(fname) == 0)
+                fname = NULL;
+            char *tmp = fname;
+            while(tmp && *tmp && isprint(*tmp))
+                tmp++;
+            if(tmp)
+                *tmp = 0;
             fprintf(stderr, "    %d: %s\n", i-2, fname);
         }
     }
@@ -322,13 +331,18 @@ struct DummyPass4 : public ModulePass {
             if(g.getName().str().substr(0,4) == "_ZTV") {
                 const char *vtable_name = g.getName().str().c_str();
                 int status = 0;
-                const char *realname = abi::__cxa_demangle(vtable_name, 0, 0, &status);
-                if(strstr(realname, "__cxxabi"))
+                char *realname = abi::__cxa_demangle(vtable_name, 0, 0, &status);
+                if(!realname || strstr(realname, "__cxxabi"))
                     continue;
+                char *tmp = realname;
+                while(*tmp && isprint(*tmp))
+                    tmp++;
+                *tmp = 0;
                 //fprintf(stderr, "Found vtable\n");
                 //fprintf(stderr, "Realname = '%s'\n", realname);
 
-                handleVtable(realname+11, dyn_cast<ConstantArray>(g.getOperand(0)));//g->getOperand(0));
+                if(g.getNumOperands())
+                    handleVtable(realname+11, dyn_cast<ConstantArray>(g.getOperand(0)));//g->getOperand(0));
             }
         }
         return false;

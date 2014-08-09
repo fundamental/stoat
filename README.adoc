@@ -21,13 +21,13 @@ General LLVM Interacting Design
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Pass 1
-    * Dump CallGraph information including stubs for virtual calls
+** Dump CallGraph information including stubs for virtual calls
 * Pass 2
-    * Dump Inline annotations on functions/methods for safety
+** Dump Inline annotations on functions/methods for safety
 * Pass 3
-    * Extract the class hierarchy
+** Extract the class hierarchy
 * Pass 4
-    * Dump vTables which can be combined with the call graph from Pass one and
-      the hierarchy from pass 3
+** Dump vTables which can be combined with the call graph from Pass one and
+   the hierarchy from pass 3
 
 

@@ -188,14 +188,16 @@ function_props.each do |key, value|
 end
 
 #Add WhiteList information
-white_list.each do |x|
-    if(property_list.include? x)
-        if(!property_list[x].realtime_p &&
-           !property_list[x].non_realtime_p)
-            property_list[x].realtime_p = true
+property_list.each do |key, value|
+    if(!value.realtime_p &&
+       !value.non_realtime_p)
+        if(white_list.include?(key) || white_list.include?(demangled_short[key]))
+            value.realtime_p = true
         end
     end
 end
+
+
 
 #Add no source stuff
 property_list.each do |key, value|
@@ -232,10 +234,20 @@ end
 
 
 #pp symbol_list
-#pp callgraph
+pp callgraph
 #puts "\n\n\n\n\n"
 #pp function_props
 #pp property_list
+
+#Print realtime stuff
+puts "Realtime stuff:"
+property_list.each do |key, value|
+    if(value.realtime_p)
+        pp demangled_symbols[key]
+    end
+end
+
+puts "\n\n"
 
 property_list.each do |key, value|
     if(value.contradicted_p)

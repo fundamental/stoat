@@ -289,14 +289,20 @@ struct DummyPass4 : public ModulePass {
         for(unsigned i=2; i<ops; ++i)
         {
             auto op       = v->getOperand(i);
-            auto alias    = dyn_cast<GlobalAlias>(op->getOperand(0));//dyn_cast<BitCastInst>(op);
-            auto someth   = op->getOperand(0);
-            Function *function = NULL;
-            if(alias)
-                function = dyn_cast<Function>(alias->getOperand(0));
-            else
-                function = dyn_cast<Function>(someth);
-            fprintf(stderr, "    %d: %s\n", i-2, function->getName().str().c_str());
+            const char *fname = NULL;
+            if(!dyn_cast<ConstantPointerNull>(op)) {
+                Function *function = NULL;
+                auto alias    = dyn_cast<GlobalAlias>(op->getOperand(0));//dyn_cast<BitCastInst>(op);
+                auto someth   = op->getOperand(0);
+                auto etc      = dyn_cast<GlobalVariable>(someth);
+                if(alias)
+                    function = dyn_cast<Function>(alias->getOperand(0));
+                else
+                    function = dyn_cast<Function>(someth);
+                if(function)
+                    fname = function->getName().str().c_str();
+            }
+            fprintf(stderr, "    %d: %s\n", i-2, fname);
         }
     }
 

@@ -19,7 +19,7 @@ class C : public B
         void other(void);
 };
 
-class D : public virtual C
+class D : public C
 {
     public:
         virtual void RT method(void) {};

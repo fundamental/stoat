@@ -1,31 +1,33 @@
 Realtime Function Static Analysis
 ---------------------------------
 
-Pass 1
-~~~~~~
+Based Upon a Four Pass System, callgraph information is extracted (virtual
+method dispatch included) for C/C++ programs compiled to llvm IR
+representations.
+This information is used in conjunction with external whitelist files to find
+calls to blacklisted or graylisted functions which could result in realtime
+unsafe behavior.
 
-Generate Function List and Annotations
-Perhaps annotate rtosc ports somehow
-
-Code 1.5
+Requires
 ~~~~~~~~
 
-Merge in blacklist/whitelist information
+- Recentish LLVM 3.3+
+- A version of clang which dumps *valid* llvm IR files (svn versions are known
+  to produce files which will result in segfaults)
+- c++filt for demangling
+- ruby for doing the actual deduction logic
 
-Pass 2
-~~~~~~
+General LLVM Interacting Design
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Populate the MultiGraph
+* Pass 1
+    * Dump CallGraph information including stubs for virtual calls
+* Pass 2
+    * Dump Inline annotations on functions/methods for safety
+* Pass 3
+    * Extract the class hierarchy
+* Pass 4
+    * Dump vTables which can be combined with the call graph from Pass one and
+      the hierarchy from pass 3
 
-Function->Function
-:source location with source function
 
-Code 2.5
-~~~~~~~~
-
-Perform same graph operations to determine problematic sequences
-
-Pass 3
-~~~~~~
-
-Gather more information about source if needed

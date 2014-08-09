@@ -31,7 +31,11 @@ struct DummyPass : public FunctionPass {
                     if(!fn2)
                         continue;
                     auto s    = fn2->getName().str();
-                    if(s == "llvm.dbg.value")
+                    if(s == "llvm.dbg.value" || s == "llvm.var.annotation"
+                            || s == "llvm.stackrestore" || s == "llvm.stacksave"
+                            || s == "llvm.va_start"
+                            || strstr(s.c_str(), "llvm.memcpy")
+                            || strstr(s.c_str(), "llvm.memset"))
                         continue;
                     if(fn2)
                         v.push_back(s);
@@ -42,6 +46,9 @@ struct DummyPass : public FunctionPass {
             fprintf(stderr, "%s :\n", Fn.getName().str().c_str());
             for(auto x:v)
                 fprintf(stderr, "    - %s\n", x.c_str());
+        } else {
+            fprintf(stderr, "%s :\n", Fn.getName().str().c_str());
+            fprintf(stderr, "    - nil\n");
         }
         return false;
     }

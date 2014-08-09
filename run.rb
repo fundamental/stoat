@@ -62,6 +62,12 @@ OptionParser.new do |opts|
       end
 end.parse!
 
+white_list = []
+options.whitelist.each do |x|
+    xxx = File.read(x).split
+    white_list.concat xxx
+end
+
 #If there are unmangled files, then mangle them and add them to the end of the
 #mangled lists
 
@@ -102,11 +108,31 @@ callgraph.each do |key,val|
     end
 end
 
+puts "Demangling #{symbol_list.length} Symbols..."
+f = File.new("tmp_thing.txt", "w")
+f.write(symbol_list.to_a.join("\n"))
+f.close
+demangled_list = `cat tmp_thing.txt | c++filt`.split("\n")
 demangled_symbols = Hash.new
+#puts "Resulting in #{demangled_list.length} Items..."
+tmp = 0
 symbol_list.each do |x|
-    demangled_symbols[x] = `echo '#{x}' | c++filt`
+    demangled_symbols[x] = demangled_list[tmp]
+    tmp = tmp + 1
 end
-pp demangled_symbols
+
+demangled_short = Hash.new
+demangled_symbols.each do |key, value|
+    m = /(\S+)\(/.match(value)
+    if(m)
+        #puts "#{value} -> #{m[1]}"
+        demangled_short[key] = m[1]
+    else
+        demangled_short[key] = value
+    end
+end
+
+#pp demangled_short
 
 
 reason_user_w  = "The Function Was Declared Realtime By A Whitelist"
@@ -136,10 +162,17 @@ symbol_list.each do |x|
     property_list[x] = DeductionChain.new
 end
 
+puts "Doing Property List Stuff"
+
 #Add information about finding source
+callgraph2 = Hash.new
 callgraph.each do |key,value|
     property_list[key].has_body_p = true
+    if(!value.include? "nil")
+        callgraph2[key] = value
+    end
 end
+callgraph = callgraph2
 
 #Add Anything That's On the function_props list
 function_props.each do |key, value|
@@ -150,6 +183,16 @@ function_props.each do |key, value|
         elsif(value.include? 'non-realtime')
             property_list[key].non_realtime_p = true
             property_list[key].reason         = reason_code_b
+        end
+    end
+end
+
+#Add WhiteList information
+white_list.each do |x|
+    if(property_list.include? x)
+        if(!property_list[x].realtime_p &&
+           !property_list[x].non_realtime_p)
+            property_list[x].realtime_p = true
         end
     end
 end
@@ -196,8 +239,12 @@ end
 
 property_list.each do |key, value|
     if(value.contradicted_p)
-        pp key
+        pp demangled_symbols[key]
         pp value
+        puts "The Contradiction Reasons: "
+        value.contradicted_by.each do |x|
+            puts " - #{demangled_symbols[x]} : #{property_list[x].reason}"
+        end
         puts "\n\n\n"
     end
 end

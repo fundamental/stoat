@@ -40,21 +40,6 @@ OptionParser.new do |opts|
           options.blacklist << list
       end
 
-      #opts.on("-W", "--unmangled-whitelist FILE",
-      #        "Define an Unmangled Whitelist File") do |list|
-      #    options.unmangled.whitelist << list
-      #end
-
-      #opts.on("-B", "--unmangled-blacklist FILE",
-      #        "Define an Unmangled Blacklist File") do |list|
-      #    options.unmangled.blacklist << list
-      #end
-
-      #opts.on("-s", "--search DIR",
-      #        "Search Within the Defined Directory") do |dir|
-      #    options.dirs << dir
-      #end
-
       opts.on("-r", "--recursive DIR",
               "Enable Recursive Search Mode") do |dir|
           options.recursive = true
@@ -145,6 +130,7 @@ reason_nocode  = "No Code Or Annotations, So The Function is Assumed Unsafe"
 
 class DeductionChain
     attr_accessor :deduction_source, :reason, :realtime_p, :non_realtime_p, :has_body_p, :contradicted_p, :contradicted_by
+
 
     def initialize
         @deduction_source = nil
@@ -261,6 +247,35 @@ property_list.each do |key, value|
     end
 end
 
+
+require "graphviz"
+g = GraphViz::new( "G" )
+color_nodes = Hash.new
+property_list.each do |key,val|
+    if(val.contradicted_p)
+        color_nodes[key] ||= "red"
+        val.contradicted_by.each do |x|
+            color_nodes[x] = "black"
+        end
+    elsif(val.realtime_p)
+        color_nodes[key] ||= "green"
+    end
+end
+
+
+node_list = Hash.new
+color_nodes.each do |key,val|
+    node_list[key] = g.add_node(demangled_short[key], "color"=> val)
+end
+
+callgraph.each do |src, dests|
+    dests.each do |dest|
+        if(node_list.include?(src) && node_list.include?(dest))
+            g.add_edges(node_list[src], node_list[dest])
+        end
+    end
+end
+g.output( :png => "sfpv_graphics.png" )
 
 #p options
 #p ARGV

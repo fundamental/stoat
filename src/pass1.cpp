@@ -72,7 +72,11 @@ struct DummyPass : public FunctionPass {
                                     type->getScalarType()->getScalarType()->print(ss);
                                     //errs() << ss.str();
                                     //fprintf(stderr,">>>>>>>>>>");
-                                    vtable_call_name = ss.str() + to_s(offset_val);
+                                    string sss = ss.str();
+                                    if(sss[1] == '"')
+                                        vtable_call_name = sss.substr(2,sss.length()-3) + to_s(offset_val);
+                                    else
+                                        vtable_call_name = sss.substr(1,sss.length()-2) + to_s(offset_val);
                                     //fprintf(stderr, "Vtable_call_name = '%s'\n", vtable_call_name.c_str());
                                 }
                             }
@@ -84,14 +88,14 @@ struct DummyPass : public FunctionPass {
                     } else if(!vtable_call_name.empty()) {
                         s = vtable_call_name;
                     } else {
-                        fprintf(stderr, "right here...\n");
-                        call->dump();
-                        fprintf(stderr, "FN: ");
-                        call->getCalledValue()->dump();
-                        fprintf(stderr, "ARG0: ");
-                        call->getOperand(0)->dump();
-                        fprintf(stderr, "ARG1: ");
-                        call->getOperand(1)->dump();
+                        //fprintf(stderr, "right here...\n");
+                        //call->dump();
+                        //fprintf(stderr, "FN: ");
+                        //call->getCalledValue()->dump();
+                        //fprintf(stderr, "ARG0: ");
+                        //call->getOperand(0)->dump();
+                        //fprintf(stderr, "ARG1: ");
+                        //call->getOperand(1)->dump();
                         continue;
                     }
                     if(s == "llvm.dbg.value" || s == "llvm.var.annotation"
@@ -102,6 +106,12 @@ struct DummyPass : public FunctionPass {
                         continue;
                     if(!s.empty())
                         v.push_back(s);
+                } else if(i.getOpcode() == Instruction::Invoke) {
+                    auto invoke = dyn_cast<InvokeInst>(&i);
+                    if(invoke->getCalledFunction())
+                        v.push_back(invoke->getCalledFunction()->getName().str());
+                    //else
+                    //    fprintf(stderr, "Oh no, not this again\n");
                 }
             }
         }

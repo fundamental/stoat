@@ -196,6 +196,7 @@ property_list.each do |key, value|
        !value.non_realtime_p)
         if(white_list.include?(key) || white_list.include?(demangled_short[key]))
             value.realtime_p = true
+            value.reason = reason_user_w
         end
     end
 end
@@ -326,7 +327,13 @@ property_list.each do |key, value|
         error_count = error_count+1
         pp demangled_symbols[key]
         pp value
-        puts "The Contradiction Reasons: "
+        puts "##The Deduction Chain:"
+        next_prop = value.deduction_source
+        while(next_prop) do
+            puts " - #{demangled_symbols[next_prop]} : #{property_list[next_prop].reason}"
+            next_prop = property_list[next_prop].deduction_source
+        end
+        puts "##The Contradiction Reasons:"
         value.contradicted_by.each do |x|
             puts " - #{demangled_symbols[x]} : #{property_list[x].reason}"
         end

@@ -40,6 +40,9 @@ sqrtf
 carg
 asinf
 errx
+warnx
+
+memcmp
 
 __builtin_memset
 __assert_fail

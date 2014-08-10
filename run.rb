@@ -320,8 +320,10 @@ demangled_symbols.each do |key, value|
     end
 end
 
+error_count = 0
 property_list.each do |key, value|
     if(value.contradicted_p)
+        error_count = error_count+1
         pp demangled_symbols[key]
         pp value
         puts "The Contradiction Reasons: "
@@ -331,6 +333,8 @@ property_list.each do |key, value|
         puts "\n\n\n"
     end
 end
+
+puts "Total of #{error_count} error(s)"
 
 require "graphviz"
 g = GraphViz::new( "G" )

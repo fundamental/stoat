@@ -63,7 +63,7 @@ files = []
 if(!ARGV.empty?)
     files.concat ARGV
 end
-if(options.recursion)
+if(options.recursive)
     files.concat `find #{options.root} -type f | grep -e "\\.bc$"`.split
 end
 

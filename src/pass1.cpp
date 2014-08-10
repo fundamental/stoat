@@ -34,7 +34,7 @@ std::string typeToString(llvm::Type *type)
     type->getScalarType()->getScalarType()->print(ss);
     string sss = ss.str();
     if(sss[1] == '"')
-        return sss.substr(2,sss.length()-3);
+        return sss.substr(2,sss.length()-4);
     else
         return sss.substr(1,sss.length()-2);
 }
@@ -94,6 +94,9 @@ struct DummyPass : public FunctionPass {
                 || strstr(s.c_str(), "llvm.memcpy")
                 || strstr(s.c_str(), "llvm.memmove")
                 || strstr(s.c_str(), "llvm.memset")
+                || strstr(s.c_str(), "llvm.pow")
+                || strstr(s.c_str(), "llvm.sqrt")
+                || strstr(s.c_str(), "llvm.") //TODO check for false captures
                 || strstr(s.c_str(), "llvm.umul"))
             return "";
         return s;

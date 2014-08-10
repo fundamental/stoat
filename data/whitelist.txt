@@ -1,7 +1,7 @@
 cos cosl cosf
 sin sinl sinf
 abs fabs fabsf fabsl cabs
-exp expf expl
+exp exp2f expf expl
 pow powf powl
 fmod fmodf fmodl
 memset memcpy
@@ -43,6 +43,8 @@ asinf
 errx
 warnx
 __fmod_finite
+__expf_finite
+__logf_finite
 
 memcmp
 vsnprintf
@@ -102,12 +104,8 @@ _ZSt9terminatev
 hacks_here
 sem_wait
 MidiEvent::operator=
-OutMgr::requestSamples
-JackEngine::processCallback
-std::basic_ostream<char, std::char_traits<char> >::_M_insert 
-
-_ZN6Master8AudioOutEPfS0_
-Part::ComputePartSmps
-Part::NoteOn
 
 process
+CarlaEngine::CarlaEngineJack::carla_jack_process_callback
+_ZN12CarlaBackend15CarlaEngineJack27carla_jack_process_callbackEjPv
+_ZN12CarlaBackend11CarlaPlugin15postRtEventsRunEv

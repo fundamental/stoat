@@ -119,28 +119,32 @@ callgraph.each do |key,val|
 end
 
 puts "Demangling #{symbol_list.length} Symbols..."
-f = File.new("tmp_thing.txt", "w")
-f.write(symbol_list.to_a.join("\n"))
-f.close
-demangled_list = `cat tmp_thing.txt | c++filt`.split("\n")
 demangled_symbols = Hash.new
-#puts "Resulting in #{demangled_list.length} Items..."
-tmp = 0
-symbol_list.each do |x|
-    demangled_symbols[x] = demangled_list[tmp]
-    tmp = tmp + 1
-end
+demangled_short   = Hash.new
+def demangle(symbol_list, demangled_symbols, demangled_short)
+    puts "Demangling #{symbol_list.length} Symbols..."
+    f = File.new("tmp_thing.txt", "w")
+    f.write(symbol_list.to_a.join("\n"))
+    f.close
+    demangled_list = `cat tmp_thing.txt | c++filt`.split("\n")
+    puts "Resulting in #{demangled_list.length} Items..."
+    tmp = 0
+    symbol_list.each do |x|
+        demangled_symbols[x] = demangled_list[tmp]
+        tmp = tmp + 1
+    end
 
-demangled_short = Hash.new
-demangled_symbols.each do |key, value|
-    m = /(\S+)\(/.match(value)
-    if(m)
-        #puts "#{value} -> #{m[1]}"
-        demangled_short[key] = m[1]
-    else
-        demangled_short[key] = value
+    demangled_symbols.each do |key, value|
+        m = /(\S+)\(/.match(value)
+        if(m)
+            #puts "#{value} -> #{m[1]}"
+            demangled_short[key] = m[1]
+        else
+            demangled_short[key] = value
+        end
     end
 end
+demangle(symbol_list, demangled_symbols, demangled_short)
 
 #pp demangled_short
 
@@ -311,25 +315,9 @@ end
 
 
 #Regenerate Demangled Symbols
-demangled_list = `cat tmp_thing.txt | c++filt`.split("\n")
 demangled_symbols = Hash.new
-
-tmp = 0
-symbol_list.each do |x|
-    demangled_symbols[x] = demangled_list[tmp]
-    tmp = tmp + 1
-end
-
-demangled_short = Hash.new
-demangled_symbols.each do |key, value|
-    m = /(\S+)\(/.match(value)
-    if(m)
-        #puts "#{value} -> #{m[1]}"
-        demangled_short[key] = m[1]
-    else
-        demangled_short[key] = value
-    end
-end
+demangled_short   = Hash.new
+demangle(symbol_list, demangled_symbols, demangled_short)
 
 error_count = 0
 property_list.each do |key, value|

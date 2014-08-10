@@ -242,6 +242,27 @@ class_high.each do |sub, supers|
     end
 end
 
+#Add C++ABI Destructor/Constructor Chaining
+symbol_list.each do |sym|
+    if /D1Ev$/.match sym
+        sym_mod = sym.gsub(/D1Ev$/, "D2Ev")
+        if(symbol_list.include?(sym_mod) && !callgraph.include?(sym))
+            callgraph[sym] = [sym_mod]
+            property_list[sym].has_body_p = true
+        end
+    end
+end
+
+symbol_list.each do |sym|
+    if /C1E/.match sym
+        sym_mod = sym.gsub(/C1E/, "C2E")
+        if(symbol_list.include?(sym_mod) && !callgraph.include?(sym))
+            callgraph[sym] = [sym_mod]
+            property_list[sym].has_body_p = true
+        end
+    end
+end
+
 
 
 #Add no source stuff

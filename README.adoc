@@ -17,6 +17,16 @@ Requires
 - c++filt for demangling
 - ruby for doing the actual deduction logic
 
+How To Use
+~~~~~~~~~~
+
+1. Compile all files of a given project using the -emit-llvm option
+2. Annotate a function with __attribute__((annotate("realtime")))
+3. Run the ruby script on the resulting llvm IR files
+4. View the contradictions and either update your code or update the whitelist
+5. ???
+6. Profit
+
 General LLVM Interacting Design
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

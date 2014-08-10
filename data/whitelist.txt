@@ -1,0 +1,105 @@
+cos cosl cosf
+sin sinl sinf
+abs fabs fabsf fabsl cabs
+exp expf expl
+pow powf powl
+fmod fmodf fmodl
+memset memcpy
+strlen strcpy strcmp snprintf
+index
+jack_port_get_buffer
+jack_midi_clear_buffer jack_midi_get_event_count jack_midi_event_get
+jack_get_sample_rate jack_ringbuffer_read_space jack_ringbuffer_read_advance
+jack_ringbuffer_write_space
+jack_ringbuffer_get_read_vector
+jack_transport_query
+std::__throw_bad_function_call
+sem_post sem_getvalue sem_trywait
+pthread_mutex_trylock
+pthread_mutex_unlock
+jack_ringbuffer_read jack_ringbuffer_write
+(process_callback)
+isalnum isalpha isascii isblank iscntrl isdigit isgraph islower isprint ispunct
+isspace isupper isxdigit
+
+
+strstr
+memmove
+strncpy
+sinh
+log
+logf
+asinh
+atanh
+atanf
+sqrt
+log10f
+floor
+floorf
+sqrtf
+carg
+asinf
+errx
+
+__builtin_memset
+__assert_fail
+__builtin_va_start
+__builtin_va_end
+__builtin_expect
+__builtin_fabs
+__builtin_fabsf
+__builtin_fabsl
+__builtin_cabs
+__builtin_cabsl
+__builtin_cabsf
+__builtin_labs
+__builtin_llabs
+__builtin_carg
+__builtin_cargl
+__builtin_cargf
+__builtin_memcmp
+__builtin_strlen
+
+fftw_execute
+
+rtosc_message
+rtosc_vmessage
+rtosc_amessage
+rtosc_narguments
+rtosc_type
+rtosc_argument
+rtosc_message_length
+rtosc_message_ring_length
+rtosc_argument_string
+rtosc_bundle
+rtosc_bundle_elements
+rtosc_bundle_fetch
+rtosc_bundle_size
+rtosc_bundle_p
+rtosc_bundle_timetag
+rtosc_match
+rtosc_match_path
+
+rtosc::Ports::dispatch
+rtosc::RtData::RtData
+
+__cxa_begin_catch
+__cxa_rethrow
+__cxa_end_catch
+__cxa_guard_acquire
+__cxa_atexit
+__cxa_guard_release
+__cxa_guard_abort
+_ZSt9terminatev
+
+hacks_here
+sem_wait
+MidiEvent::operator=
+OutMgr::requestSamples
+JackEngine::processCallback
+std::basic_ostream<char, std::char_traits<char> >::_M_insert 
+
+_ZN6Master8AudioOutEPfS0_
+Part::ComputePartSmps
+Part::NoteOn
+

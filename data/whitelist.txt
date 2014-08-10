@@ -18,6 +18,7 @@ sem_post sem_getvalue sem_trywait
 pthread_mutex_trylock
 pthread_mutex_unlock
 jack_ringbuffer_read jack_ringbuffer_write
+jack_midi_event_reserve
 (process_callback)
 isalnum isalpha isascii isblank iscntrl isdigit isgraph islower isprint ispunct
 isspace isupper isxdigit
@@ -41,8 +42,11 @@ carg
 asinf
 errx
 warnx
+__fmod_finite
 
 memcmp
+vsnprintf
+abort
 
 __builtin_memset
 __assert_fail
@@ -106,3 +110,4 @@ _ZN6Master8AudioOutEPfS0_
 Part::ComputePartSmps
 Part::NoteOn
 
+process

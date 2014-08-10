@@ -89,6 +89,8 @@ struct DummyPass : public FunctionPass {
                 || s == "llvm.stackrestore" || s == "llvm.stacksave"
                 || s == "llvm.va_start"
                 || s == "llvm.va_end"
+                || s == "llvm.lifetime.start"
+                || s == "llvm.lifetime.end"
                 || strstr(s.c_str(), "llvm.memcpy")
                 || strstr(s.c_str(), "llvm.memmove")
                 || strstr(s.c_str(), "llvm.memset")

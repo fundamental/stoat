@@ -64,7 +64,15 @@ if(!ARGV.empty?)
     files.concat ARGV
 end
 if(options.recursive)
-    files.concat `find #{options.root} -type f | grep -e "\\.bc$"`.split
+    rfiles = []
+    rfiles.concat `find #{options.root} -type f | grep -e "\\.bc$"`.split
+    rfiles.concat `find #{options.root} -type f | grep -e "\\.o$"`.split
+
+    rfiles.each do |f|
+        if(/LLVM/.match `file #{f}`)
+            files << f
+        end
+    end
 end
 
 if(files.empty?)
@@ -244,7 +252,8 @@ class_high.each do |sub, supers|
 end
 
 #Add C++ABI Destructor/Constructor Chaining
-symbol_list.each do |sym|
+symbol_list.each do |sym_|
+    sym = sym_.to_s #TODO figure out how an integer got in this list
     if /D1Ev$/.match sym
         sym_mod = sym.gsub(/D1Ev$/, "D2Ev")
         if(symbol_list.include?(sym_mod) && !callgraph.include?(sym))
@@ -254,7 +263,8 @@ symbol_list.each do |sym|
     end
 end
 
-symbol_list.each do |sym|
+symbol_list.each do |sym_|
+    sym = sym_.to_s
     if /C1E/.match sym
         sym_mod = sym.gsub(/C1E/, "C2E")
         if(symbol_list.include?(sym_mod) && !callgraph.include?(sym))

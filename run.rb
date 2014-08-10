@@ -30,7 +30,7 @@ options.dir  = []
 options.recursive = false
 
 OptionParser.new do |opts|
-      opts.banner = "Usage: example.rb [options] FILE"
+      opts.banner = "Usage: example.rb [options] FILES"
 
       opts.on("-w", "--whitelist FILE",
               "Define a Mangled Whitelist File") do |list|
@@ -59,11 +59,19 @@ end
 #mangled lists
 
 #For each one of the bitcode files, run the pass based preprocessor
-if(!options.recursive)
-    $stderr.puts "This Program Must Process Input Recursively At this time"
+files = []
+if(!ARGV.empty?)
+    files.concat ARGV
+end
+if(options.recursion)
+    files.concat `find #{options.root} -type f | grep -e "\\.bc$"`.split
+end
+
+if(files.empty?)
+    puts "There Are No Files To Process"
     exit 1
 end
-files = `find #{options.root} -type f | grep -e "\\.bc$"`.split
+
 #p files
 callgraph = Hash.new
 function_props = Hash.new
@@ -134,7 +142,7 @@ reason_user_b  = "The Function Was Declared NonRealtime By A Blacklist"
 reason_code_w  = "The Function Was Declared Realtime By A Code Annotation"
 reason_code_b  = "The Function Was Declared NonRealtime By A Code Annotation"
 reason_deduced = "The Function Was Deduced To Need To Be RealTime As It Was Called By A Realtime Function"
-reason_none    = "No Deduction has occured"
+reason_none    = "Nom Deduction has occured"
 reason_nocode  = "No Code Or Annotations, So The Function is Assumed Unsafe"
 
 class DeductionChain
@@ -270,18 +278,10 @@ end
 
 
 
-#pp symbol_list
-#pp callgraph
-#puts "\n\n\n\n\n"
-#pp function_props
-#pp property_list
-#pp vtable_information
-#pp class_high
-
 #Regenerate Demangled Symbols
 demangled_list = `cat tmp_thing.txt | c++filt`.split("\n")
 demangled_symbols = Hash.new
-#puts "Resulting in #{demangled_list.length} Items..."
+
 tmp = 0
 symbol_list.each do |x|
     demangled_symbols[x] = demangled_list[tmp]
@@ -299,16 +299,6 @@ demangled_symbols.each do |key, value|
     end
 end
 
-#Print realtime stuff
-#puts "Realtime stuff:"
-#property_list.each do |key, value|
-#    if(value.realtime_p)
-#        pp demangled_symbols[key]
-#    end
-#end
-
-puts "\n\n"
-
 property_list.each do |key, value|
     if(value.contradicted_p)
         pp demangled_symbols[key]
@@ -320,7 +310,6 @@ property_list.each do |key, value|
         puts "\n\n\n"
     end
 end
-
 
 require "graphviz"
 g = GraphViz::new( "G" )
@@ -352,6 +341,3 @@ callgraph.each do |src, dests|
     end
 end
 g.output( :png => "sfpv_graphics.png" )
-
-#p options
-#p ARGV

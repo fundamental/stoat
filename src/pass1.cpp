@@ -90,6 +90,7 @@ struct DummyPass : public FunctionPass {
                 || s == "llvm.va_start"
                 || s == "llvm.va_end"
                 || strstr(s.c_str(), "llvm.memcpy")
+                || strstr(s.c_str(), "llvm.memmove")
                 || strstr(s.c_str(), "llvm.memset")
                 || strstr(s.c_str(), "llvm.umul"))
             return "";

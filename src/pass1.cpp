@@ -27,6 +27,18 @@ std::string to_s(T x)
     return stringFrom(x);
 }
 
+std::string typeToString(llvm::Type *type)
+{
+    std::string data_str;
+    llvm::raw_string_ostream ss(data_str);
+    type->getScalarType()->getScalarType()->print(ss);
+    string sss = ss.str();
+    if(sss[1] == '"')
+        return sss.substr(2,sss.length()-3);
+    else
+        return sss.substr(1,sss.length()-2);
+}
+
 struct DummyPass : public FunctionPass {
     static char ID; // Pass ID, replacement for typeid
     DummyPass() : FunctionPass(ID) {}
@@ -35,77 +47,61 @@ struct DummyPass : public FunctionPass {
         AU.setPreservesAll();
     }
 
+    std::string runOnCallInst(CallInst *call)
+    {
+        auto fn2  = call->getCalledFunction();
+        auto it   = call->getCalledValue();
+        auto it2  = dyn_cast<GlobalAlias>(it);
+        auto load = dyn_cast<LoadInst>(it);
+        string vtable_call_name = "";
+        if(!fn2 && it2)
+            fn2 = dyn_cast<Function>(it2->getOperand(0));
+        if(!fn2 && load) { //This might be a vtable call
+            auto getelm = dyn_cast<GetElementPtrInst>(load->getOperand(0));
+            if(getelm && getelm->getNumOperands() == 2) { //this is at least a function pointer at an offset
+                auto offset = dyn_cast<ConstantInt>(getelm->getOperand(1));
+                auto load2  = dyn_cast<LoadInst>(getelm->getOperand(0));
+                if(offset && load) {
+                    size_t offset_val = offset->getZExtValue();
+                    auto bitcast = dyn_cast<BitCastInst>(load2->getOperand(0));
+                    if(bitcast)
+                        vtable_call_name = typeToString(bitcast->getSrcTy()) + to_s(offset_val);
+                }
+            }
+        }
+        string s;
+        if(fn2) {
+            s = fn2->getName().str();
+        } else if(!vtable_call_name.empty()) {
+            s = vtable_call_name;
+        } else {
+            //fprintf(stderr, "right here...\n");
+            //call->dump();
+            //fprintf(stderr, "FN: ");
+            //call->getCalledValue()->dump();
+            //fprintf(stderr, "ARG0: ");
+            //call->getOperand(0)->dump();
+            //fprintf(stderr, "ARG1: ");
+            //call->getOperand(1)->dump();
+            return "";
+        }
+        if(s == "llvm.dbg.value" || s == "llvm.var.annotation"
+                || s == "llvm.stackrestore" || s == "llvm.stacksave"
+                || s == "llvm.va_start"
+                || s == "llvm.va_end"
+                || strstr(s.c_str(), "llvm.memcpy")
+                || strstr(s.c_str(), "llvm.memset")
+                || strstr(s.c_str(), "llvm.umul"))
+            return "";
+        return s;
+    }
+
     bool runOnFunction(Function &Fn) override {
-        //Fn.dump();
-        //auto attr = Fn.getAttributes();
-        //attr.dump();
         std::vector<string> v;
-        //Fn.dump();
         for(auto &bb:Fn) {
             for(auto &i:bb) {
                 if(i.getOpcode() == Instruction::Call) {
-                    auto call = dyn_cast<CallInst>(&i);
-                    auto fn2  = call->getCalledFunction();
-                    auto it   = call->getCalledValue();
-                    auto it2  = dyn_cast<GlobalAlias>(it);
-                    auto load = dyn_cast<LoadInst>(it);
-                    string vtable_call_name = "";
-                    if(!fn2 && it2)
-                        fn2 = dyn_cast<Function>(it2->getOperand(0));
-                    if(!fn2 && load) { //This might be a vtable call
-                        auto getelm = dyn_cast<GetElementPtrInst>(load->getOperand(0));
-                        if(getelm && getelm->getNumOperands() == 2) { //this is at least a function pointer at an offset
-                            auto offset = dyn_cast<ConstantInt>(getelm->getOperand(1));
-                            auto load2  = dyn_cast<LoadInst>(getelm->getOperand(0));
-                            if(offset && load) {
-                                size_t offset_val = offset->getZExtValue();
-                                auto bitcast = dyn_cast<BitCastInst>(load2->getOperand(0));
-                                if(bitcast) {
-                                    //fprintf(stderr, "Surely a vtable call at off '%d' for : ", offset_val);
-                                    //bitcast->getSrcTy()->dump();
-                                    //fprintf(stderr, "\n");
-                                    //fprintf(stderr, "Setting vtable_call_name\n");
-                                    auto type = bitcast->getSrcTy();
-                                    //fprintf(stderr,"<<<<<<<<<<");
-                                    std::string data_str;
-                                    llvm::raw_string_ostream ss(data_str);
-                                    type->getScalarType()->getScalarType()->print(ss);
-                                    //errs() << ss.str();
-                                    //fprintf(stderr,">>>>>>>>>>");
-                                    string sss = ss.str();
-                                    if(sss[1] == '"')
-                                        vtable_call_name = sss.substr(2,sss.length()-3) + to_s(offset_val);
-                                    else
-                                        vtable_call_name = sss.substr(1,sss.length()-2) + to_s(offset_val);
-                                    //fprintf(stderr, "Vtable_call_name = '%s'\n", vtable_call_name.c_str());
-                                }
-                            }
-                        }
-                    }
-                    string s;
-                    if(fn2) {
-                        s = fn2->getName().str();
-                    } else if(!vtable_call_name.empty()) {
-                        s = vtable_call_name;
-                    } else {
-                        //fprintf(stderr, "right here...\n");
-                        //call->dump();
-                        //fprintf(stderr, "FN: ");
-                        //call->getCalledValue()->dump();
-                        //fprintf(stderr, "ARG0: ");
-                        //call->getOperand(0)->dump();
-                        //fprintf(stderr, "ARG1: ");
-                        //call->getOperand(1)->dump();
-                        continue;
-                    }
-                    if(s == "llvm.dbg.value" || s == "llvm.var.annotation"
-                            || s == "llvm.stackrestore" || s == "llvm.stacksave"
-                            || s == "llvm.va_start"
-                            || s == "llvm.va_end"
-                            || strstr(s.c_str(), "llvm.memcpy")
-                            || strstr(s.c_str(), "llvm.memset")
-                            || strstr(s.c_str(), "llvm.umul"))
-                        continue;
+                    auto s = runOnCallInst(dyn_cast<CallInst>(&i));
                     if(!s.empty())
                         v.push_back(s);
                 } else if(i.getOpcode() == Instruction::Invoke) {
@@ -161,16 +157,8 @@ struct DummyPass2 : public ModulePass {
             for(unsigned i=0; i<ops; ++i) {
                 auto op = ggg->getOperand(i);
                 if(auto o = dyn_cast<ConstantExpr>(op))
-                {
-                    //fprintf(stderr, "Case 1[");
-                    //o->getOperand(0)->dump();;
-                    //fprintf(stderr, "]\n");
                     handleNested(o->getOperand(0));
-
-                }
-                //fprintf(stderr,"\n");
             }
-            //fprintf(stderr, "I found it\n");
         }
         return false;
     }
@@ -271,10 +259,7 @@ struct DummyPass3 : public FunctionPass {
     bool runOnFunction(Function &Fn) override {
         int status = 0;
         char *realname = abi::__cxa_demangle(Fn.getName().str().c_str(), 0, 0, &status);
-        //fprintf(stderr, "Realname = '%s'\n", realname);
         if(isConstructorp(realname)) {
-            //fprintf(stderr, "Found A Constructor For Type '%s'\n", getMethodName(realname).c_str());
-            //Fn.dump();
             findSuperClasses(Fn, getMethodName(realname));
         }
         return false;
@@ -306,7 +291,6 @@ struct DummyPass4 : public ModulePass {
                 Function *function = NULL;
                 auto alias    = dyn_cast<GlobalAlias>(op->getOperand(0));//dyn_cast<BitCastInst>(op);
                 auto someth   = op->getOperand(0);
-                auto etc      = dyn_cast<GlobalVariable>(someth);
                 if(alias)
                     function = dyn_cast<Function>(alias->getOperand(0));
                 else
@@ -338,11 +322,9 @@ struct DummyPass4 : public ModulePass {
                 while(*tmp && isprint(*tmp))
                     tmp++;
                 *tmp = 0;
-                //fprintf(stderr, "Found vtable\n");
-                //fprintf(stderr, "Realname = '%s'\n", realname);
 
                 if(g.getNumOperands())
-                    handleVtable(realname+11, dyn_cast<ConstantArray>(g.getOperand(0)));//g->getOperand(0));
+                    handleVtable(realname+11, dyn_cast<ConstantArray>(g.getOperand(0)));
             }
         }
         return false;

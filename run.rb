@@ -364,6 +364,23 @@ end
 puts "Total of #{error_count} error(s)"
 
 require "graphviz"
+
+def to_2hex(x)
+    s = x.to_s 16
+    if(s.length == 1)
+        "0" + s
+    else
+        s
+    end
+end
+
+def random_color
+    r = (rand * 255 * 255).to_i % ("CE".to_i 16)
+    g = (rand * 255 * 255).to_i % ("DD".to_i 16)
+    b = (rand * 255 * 255).to_i % ("EC".to_i 16)
+    "#" + ([r,g,b].map{|x| to_2hex(x)}.join)
+end
+
 g = GraphViz::new( "G" )
 color_nodes = Hash.new
 property_list.each do |key,val|
@@ -388,7 +405,11 @@ end
 callgraph.each do |src, dests|
     dests.uniq.each do |dest|
         if(node_list.include?(src) && node_list.include?(dest))
-            g.add_edges(node_list[src], node_list[dest])
+            if(property_list[dest].non_realtime_p)
+                g.add_edges(node_list[src], node_list[dest], "color"=>(random_color), "style"=>"bold")
+            else
+                g.add_edges(node_list[src], node_list[dest], "color"=>(random_color), "style"=>"dashed")
+            end
         end
     end
 end

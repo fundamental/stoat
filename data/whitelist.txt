@@ -108,4 +108,3 @@ MidiEvent::operator=
 process
 CarlaEngine::CarlaEngineJack::carla_jack_process_callback
 _ZN12CarlaBackend15CarlaEngineJack27carla_jack_process_callbackEjPv
-_ZN12CarlaBackend11CarlaPlugin15postRtEventsRunEv

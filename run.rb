@@ -26,6 +26,7 @@ options.unmangled = OpenStruct.new
 options.unmangled.whitelist = []
 options.unmangled.blacklist = []
 options.root = "./"
+options.lib  = "./src/libfoo.so"
 options.dir  = []
 options.recursive = false
 
@@ -47,12 +48,22 @@ OptionParser.new do |opts|
           options.recursive = true
           options.root = dir
       end
+
+      opts.on("-l", "--llvm-passes LIB",
+              "The Library Containing The Needed LLVM Passes") do |lib|
+          options.lib = lib
+      end
 end.parse!
 
+#White List/Black List Expansion
 white_list = []
 options.whitelist.each do |x|
-    xxx = File.read(x).split
-    white_list.concat xxx
+    white_list.concat File.read(x).split
+end
+
+black_list = []
+options.blacklist.each do |x|
+    black_list.concat File.read(x).split
 end
 
 #If there are unmangled files, then mangle them and add them to the end of the
@@ -88,19 +99,19 @@ vtable_information = Hash.new
 
 files.each do |f|
     p "running #{f} file..."
-    `opt -load ./src/libfoo.so --dummy1 < #{f} > /dev/null 2> sfpv_output.txt`
+    `opt -load #{options.lib} --dummy1 < #{f} > /dev/null 2> sfpv_output.txt`
     #puts File.read("sfpv_output.txt")
     ncallgraph = YAML.load_file "sfpv_output.txt"
 
 
-    `opt -load ./src/libfoo.so --dummy2 < #{f} > /dev/null 2> sfpv_output.txt`
+    `opt -load #{options.lib} --dummy2 < #{f} > /dev/null 2> sfpv_output.txt`
     #puts File.read("sfpv_output.txt")
     nfunc = YAML.load_file "sfpv_output.txt"
 
-    `opt -load ./src/libfoo.so --dummy3 < #{f} > /dev/null 2> sfpv_output.txt`
+    `opt -load #{options.lib} --dummy3 < #{f} > /dev/null 2> sfpv_output.txt`
     class_nhigh = YAML.load_file "sfpv_output.txt"
 
-    `opt -load ./src/libfoo.so --dummy4 < #{f} > /dev/null 2> sfpv_output.txt`
+    `opt -load #{options.lib} --dummy4 < #{f} > /dev/null 2> sfpv_output.txt`
     vtable_ninformation = YAML.load_file "sfpv_output.txt"
 
     merge_maps(callgraph, ncallgraph)
@@ -202,13 +213,24 @@ function_props.each do |key, value|
     end
 end
 
-#Add WhiteList information
+#Add WhiteList Information
 property_list.each do |key, value|
     if(!value.realtime_p &&
        !value.non_realtime_p)
         if(white_list.include?(key) || white_list.include?(demangled_short[key]))
             value.realtime_p = true
             value.reason = reason_user_w
+        end
+    end
+end
+
+#Add BlackList Information
+property_list.each do |key, value|
+    if(!value.realtime_p &&
+       !value.non_realtime_p)
+        if(black_list.include?(key) || black_list.include?(demangled_short[key]))
+            value.non_realtime_p = true
+            value.reason = reason_user_b
         end
     end
 end

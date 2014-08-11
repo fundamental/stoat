@@ -12,8 +12,7 @@ Requires
 ~~~~~~~~
 
 - Recentish LLVM 3.3+
-- A version of clang which dumps *valid* llvm IR files (svn versions are known
-  to produce files which will result in segfaults)
+- A version of clang which dumps *valid* llvm IR files
 - c++filt for demangling
 - ruby for doing the actual deduction logic
 

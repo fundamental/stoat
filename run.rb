@@ -132,6 +132,29 @@ end
 puts "Demangling #{symbol_list.length} Symbols..."
 demangled_symbols = Hash.new
 demangled_short   = Hash.new
+
+def shorten_symbol(sym_)
+    paren = 0
+    finished = false
+
+    sym = ""
+    sym_.reverse.each_char do |x|
+        if finished
+            sym << x
+        end
+        if x == ')'
+            paren = paren + 1
+        end
+
+        if(x == '(' && paren == 1)
+            finished = 1
+        elsif(x == '(')
+            paren = paren - 1
+        end
+    end
+    sym.reverse
+end
+
 def demangle(symbol_list, demangled_symbols, demangled_short)
     puts "Demangling #{symbol_list.length} Symbols..."
     f = File.new("tmp_thing.txt", "w")
@@ -146,12 +169,11 @@ def demangle(symbol_list, demangled_symbols, demangled_short)
     end
 
     demangled_symbols.each do |key, value|
-        m = /(\S+)\(/.match(value)
-        if(m)
-            #puts "#{value} -> #{m[1]}"
-            demangled_short[key] = m[1]
-        else
+        m = shorten_symbol(value)
+        if(m.empty?)
             demangled_short[key] = value
+        else
+            demangled_short[key] = m
         end
     end
 end

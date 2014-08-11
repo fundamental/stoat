@@ -233,7 +233,7 @@ struct DummyPass3 : public FunctionPass {
         Instruction *this_ptr = NULL;
         for(auto &bb:Fn) {
             for(auto &I:bb) {
-                if(!this_ptr)
+                if(!this_ptr && dyn_cast<AllocaInst>(&I))
                     this_ptr = &I;
 
                 if(auto bitcast = dyn_cast<BitCastInst>(&I))
@@ -266,6 +266,7 @@ struct DummyPass3 : public FunctionPass {
         int status = 0;
         char *realname = abi::__cxa_demangle(Fn.getName().str().c_str(), 0, 0, &status);
         if(isConstructorp(realname)) {
+            //fprintf(stderr, "I'm in a constructor '%s'\n", realname);
             findSuperClasses(Fn, getMethodName(realname));
         }
         return false;

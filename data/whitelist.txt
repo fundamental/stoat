@@ -13,7 +13,10 @@ jack_get_sample_rate jack_ringbuffer_read_space jack_ringbuffer_read_advance
 jack_ringbuffer_write_space
 jack_ringbuffer_get_read_vector
 jack_transport_query
+jack_get_current_transport_frame
+jack_get_buffer_size
 std::__throw_bad_function_call
+std::__throw_bad_alloc
 sem_post sem_getvalue sem_trywait
 pthread_mutex_trylock
 pthread_mutex_unlock
@@ -22,7 +25,9 @@ jack_midi_event_reserve
 (process_callback)
 isalnum isalpha isascii isblank iscntrl isdigit isgraph islower isprint ispunct
 isspace isupper isxdigit
+sprintf
 
+std::basic_string<char, std::char_traits<char>, std::allocator<char> >::c_str
 
 strstr
 memmove
@@ -92,6 +97,9 @@ rtosc_match_path
 rtosc::Ports::dispatch
 rtosc::RtData::RtData
 
+std::__throw_out_of_range
+std::__throw_length_error
+
 __cxa_begin_catch
 __cxa_rethrow
 __cxa_end_catch
@@ -104,6 +112,7 @@ _ZSt9terminatev
 hacks_here
 sem_wait
 MidiEvent::operator=
+Jack::static_process
 
 process
 CarlaEngine::CarlaEngineJack::carla_jack_process_callback

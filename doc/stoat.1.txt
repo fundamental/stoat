@@ -1,0 +1,41 @@
+STOAT(1)
+=======
+:doctype: manpage
+
+NAME
+----
+stoat - STatic Object file Analysis Tool
+
+SYNOPSIS
+--------
+*sfpv* ['OPTIONS'] FILES
+
+DESCRIPTION
+-----------
+
+*stoat* is a LLVM based static analysis tool to verify that functions
+have some listed property through the use of annotations and a basic
+deduction system.
+The primary goal of this program is to show realtime safety bugs in audio
+software, though it should eventually grow to be much more general than this.
+
+OPTIONS
+-------
+
+*-w, --whitelist FILE*::
+    Define a Whitelist File
+*-b, --blacklist FILE*::
+    Define a Blacklist File
+*-r, --recursive DIR*::
+    Enable Recursive Search Mode
+*-l, --llvm-passes LIB*::
+    Specify The Library Containing The Needed LLVM Passes
+
+BUGS
+----
+Please report any bugs to the bugtracker
+    http://github.com/fundamental/stoat/issues
+
+AUTHOR
+------
+stoat was written by Mark McCurry.

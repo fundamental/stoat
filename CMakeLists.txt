@@ -11,14 +11,22 @@ if(NOT RUBY OR NOT CLANG OR NOT CLANGPP)
     message(error_fatal "Missing Dependencies...")
 endif()
 
-add_definitions(-fno-rtti)
 link_directories(${LLVM_LIB_DIR})
+include_directories(${LLVM_INCLUDE_DIRS})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_DEFINITIONS} -fno-rtti -std=c++11")
 message(status "Build Flags '${CMAKE_CXX_FLAGS}'")
 
 add_library(stoat SHARED src/llvm-passes.cpp)
-target_link_libraries(stoat ${LLVM_LDFLAGS})
+
+######################################################################
+#                      Installation                                  #
+######################################################################
+
+install(TARGETS stoat LIBRARY DESTINATION lib)
+install(PROGRAMS ${CMAKE_SOURCE_DIR}/stoat DESTINATION bin)
+install(FILES ${CMAKE_SOURCE_DIR}/data/whitelist.txt
+              ${CMAKE_SOURCE_DIR}/data/blacklist.txt DESTINATION share/stoat)
 
 ######################################################################
 #               Tests to verify it works                             #
@@ -28,7 +36,7 @@ enable_testing()
 
 #Verify one file basic behavior
 add_test(test-one ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
-    ${CMAKE_SOURCE_DIR}/run.rb
+    ${CMAKE_SOURCE_DIR}/stoat
     ${CMAKE_BINARY_DIR}/libstoat.so
     ${CLANG}
     ${CMAKE_SOURCE_DIR}/data/empty_whitelist.txt
@@ -41,7 +49,7 @@ set_property(TEST test-one
 #Check that information is translated over multiple translation units
 add_test(multi-translation-unit
     ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
-    ${CMAKE_SOURCE_DIR}/run.rb
+    ${CMAKE_SOURCE_DIR}/stoat
     ${CMAKE_BINARY_DIR}/libstoat.so
     ${CLANGPP}
     ${CMAKE_SOURCE_DIR}/data/empty_whitelist.txt
@@ -53,7 +61,7 @@ set_property(TEST multi-translation-unit PROPERTY PASS_REGULAR_EXPRESSION
 #Verify that functions can be externally annotated
 add_test(manual-whitelist
     ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
-    ${CMAKE_SOURCE_DIR}/run.rb
+    ${CMAKE_SOURCE_DIR}/stoat
     ${CMAKE_BINARY_DIR}/libstoat.so
     ${CLANGPP}
     ${CMAKE_SOURCE_DIR}/data/whitelist.txt
@@ -63,7 +71,7 @@ add_test(manual-whitelist
 #Verify that virtual methods are handled correctly
 add_test(virtual-calls
     ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
-    ${CMAKE_SOURCE_DIR}/run.rb
+    ${CMAKE_SOURCE_DIR}/stoat
     ${CMAKE_BINARY_DIR}/libstoat.so
     ${CLANGPP}
     ${CMAKE_SOURCE_DIR}/data/whitelist.txt
@@ -73,7 +81,7 @@ add_test(virtual-calls
 #Verify that 'operator new' was found
 add_test(op-new
     ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
-    ${CMAKE_SOURCE_DIR}/run.rb
+    ${CMAKE_SOURCE_DIR}/stoat
     ${CMAKE_BINARY_DIR}/libstoat.so
     ${CLANGPP}
     ${CMAKE_SOURCE_DIR}/data/whitelist.txt
@@ -84,7 +92,7 @@ set_property(TEST op-new PROPERTY PASS_REGULAR_EXPRESSION
 
 add_test(malloc-blacklist
     ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
-    ${CMAKE_SOURCE_DIR}/run.rb
+    ${CMAKE_SOURCE_DIR}/stoat
     ${CMAKE_BINARY_DIR}/libstoat.so
     ${CLANG}
     ${CMAKE_SOURCE_DIR}/data/whitelist.txt
@@ -96,7 +104,7 @@ set_property(TEST malloc-blacklist PROPERTY PASS_REGULAR_EXPRESSION
 
 add_test(lambda-call
     ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
-    ${CMAKE_SOURCE_DIR}/run.rb
+    ${CMAKE_SOURCE_DIR}/stoat
     ${CMAKE_BINARY_DIR}/libstoat.so
     ${CLANGPP}
     ${CMAKE_SOURCE_DIR}/data/whitelist.txt

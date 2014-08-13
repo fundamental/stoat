@@ -5,7 +5,6 @@ require 'set'
 require 'yaml'
 require 'pp'
 
-
 #Modifies mapa s.t. it includes the mapb info
 def merge_maps(mapa, mapb)
     if mapb
@@ -19,15 +18,16 @@ def merge_maps(mapa, mapb)
     end
 end
 
+CurrentDir = File.dirname(__FILE__)
 
 options = OpenStruct.new
-options.whitelist = []
-options.blacklist = []
+options.whitelist = [CurrentDir+"/data/whitelist.txt", CurrentDir+"/../share/stoat/whitelist.txt"]
+options.blacklist = [CurrentDir+"/data/blacklist.txt", CurrentDir+"../share/stoat/blacklist.txt"]
 options.unmangled = OpenStruct.new
 options.unmangled.whitelist = []
 options.unmangled.blacklist = []
 options.root = "./"
-options.lib  = "./src/libfoo.so"
+options.lib  = "libstoat.so"
 options.dir  = []
 options.recursive = false
 
@@ -35,12 +35,12 @@ OptionParser.new do |opts|
       opts.banner = "Usage: example.rb [options] FILES"
 
       opts.on("-w", "--whitelist FILE",
-              "Define a Mangled Whitelist File") do |list|
+              "Define a Whitelist File") do |list|
           options.whitelist << list
       end
 
       opts.on("-b", "--blacklist FILE",
-              "Define a Mangled Blacklist File") do |list|
+              "Define a Blacklist File") do |list|
           options.blacklist << list
       end
 
@@ -58,13 +58,29 @@ end.parse!
 
 #White List/Black List Expansion
 white_list = []
+tmp = 0
 options.whitelist.each do |x|
-    white_list.concat File.read(x).split
+    begin
+        tmp = tmp + 1
+        white_list.concat File.read(x).split
+    rescue Errno::ENOENT => err
+        if(tmp > 2) #Non default
+            $stderr.puts("Unknown whitelist file #{x}")
+        end
+    end
 end
 
 black_list = []
+tmp = 0
 options.blacklist.each do |x|
-    black_list.concat File.read(x).split
+    begin
+        tmp = tmp + 1
+        black_list.concat File.read(x).split
+    rescue Errno::ENOENT => err
+        if(tmp > 2) #Non default
+            $stderr.puts "Unknown blacklist file #{x}"
+        end
+    end
 end
 
 #If there are unmangled files, then mangle them and add them to the end of the

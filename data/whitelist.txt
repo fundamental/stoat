@@ -16,11 +16,18 @@ jack_transport_query
 jack_get_current_transport_frame
 jack_get_buffer_size
 jack_midi_event_write
+jack_ringbuffer_peek
+
 std::__throw_bad_function_call
 std::__throw_bad_alloc
 sem_post sem_getvalue sem_trywait
 pthread_mutex_trylock
 pthread_mutex_unlock
+pthread_rwlock_unlock
+pthread_rwlock_tryrdlock
+pthread_self
+pthread_setspecific
+pthread_getspecific
 jack_ringbuffer_read jack_ringbuffer_write
 jack_midi_event_reserve
 (process_callback)

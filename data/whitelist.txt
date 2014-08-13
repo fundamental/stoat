@@ -15,6 +15,7 @@ jack_ringbuffer_get_read_vector
 jack_transport_query
 jack_get_current_transport_frame
 jack_get_buffer_size
+jack_midi_event_write
 std::__throw_bad_function_call
 std::__throw_bad_alloc
 sem_post sem_getvalue sem_trywait

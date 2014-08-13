@@ -1,3 +1,4 @@
+#!/usr/bin/ruby
 require 'optparse'
 require 'ostruct'
 require 'set'
@@ -99,19 +100,19 @@ vtable_information = Hash.new
 
 files.each do |f|
     p "running #{f} file..."
-    `opt -load #{options.lib} --dummy1 < #{f} > /dev/null 2> sfpv_output.txt`
+    `opt -load #{options.lib} --extract-callgraph < #{f} > /dev/null 2> sfpv_output.txt`
     #puts File.read("sfpv_output.txt")
     ncallgraph = YAML.load_file "sfpv_output.txt"
 
 
-    `opt -load #{options.lib} --dummy2 < #{f} > /dev/null 2> sfpv_output.txt`
+    `opt -load #{options.lib} --extract-annotations < #{f} > /dev/null 2> sfpv_output.txt`
     #puts File.read("sfpv_output.txt")
     nfunc = YAML.load_file "sfpv_output.txt"
 
-    `opt -load #{options.lib} --dummy3 < #{f} > /dev/null 2> sfpv_output.txt`
+    `opt -load #{options.lib} --extract-class-hierarchy < #{f} > /dev/null 2> sfpv_output.txt`
     class_nhigh = YAML.load_file "sfpv_output.txt"
 
-    `opt -load #{options.lib} --dummy4 < #{f} > /dev/null 2> sfpv_output.txt`
+    `opt -load #{options.lib} --extract-vtables < #{f} > /dev/null 2> sfpv_output.txt`
     vtable_ninformation = YAML.load_file "sfpv_output.txt"
 
     merge_maps(callgraph, ncallgraph)

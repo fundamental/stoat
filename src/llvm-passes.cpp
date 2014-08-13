@@ -39,9 +39,9 @@ std::string typeToString(llvm::Type *type)
         return sss.substr(1,sss.length()-2);
 }
 
-struct DummyPass : public FunctionPass {
-    static char ID; // Pass ID, replacement for typeid
-    DummyPass() : FunctionPass(ID) {}
+struct ExtractCallGraph : public FunctionPass {
+    static char ID;
+    ExtractCallGraph() : FunctionPass(ID) {}
 
     void getAnalysisUsage(AnalysisUsage &AU) const override {
         AU.setPreservesAll();
@@ -131,9 +131,9 @@ struct DummyPass : public FunctionPass {
     }
 };
 
-struct DummyPass2 : public ModulePass {
+struct ExtractAnnotations : public ModulePass {
     static char ID; // Pass ID, replacement for typeid
-    DummyPass2() : ModulePass(ID) {}
+    ExtractAnnotations() : ModulePass(ID) {}
 
     void getAnalysisUsage(AnalysisUsage &AU) const override {
         AU.setPreservesAll();
@@ -171,9 +171,9 @@ struct DummyPass2 : public ModulePass {
 };
 
 //Extract Class Hierarcy
-struct DummyPass3 : public FunctionPass {
+struct ExtractClassHierarchy : public FunctionPass {
     static char ID; // Pass ID, replacement for typeid
-    DummyPass3() : FunctionPass(ID) {}
+    ExtractClassHierarchy() : FunctionPass(ID) {}
 
     void getAnalysisUsage(AnalysisUsage &AU) const override {
         AU.setPreservesAll();
@@ -274,9 +274,9 @@ struct DummyPass3 : public FunctionPass {
 };
 
 //Extract Vtable contents
-struct DummyPass4 : public ModulePass {
+struct ExtractVtables : public ModulePass {
     static char ID; // Pass ID, replacement for typeid
-    DummyPass4() : ModulePass(ID) {}
+    ExtractVtables() : ModulePass(ID) {}
 
     void getAnalysisUsage(AnalysisUsage &AU) const override {
         AU.setPreservesAll();
@@ -287,6 +287,7 @@ struct DummyPass4 : public ModulePass {
         //Field 0 - NULL?
         //Field 1 - Typeinfo
         //Field 2 - Offset 0 virtual method
+        //Field N - Offset N-2 virtual method
         unsigned ops = v->getNumOperands();
         if(ops >= 2)
             fprintf(stderr, "%s:\n", name);
@@ -296,7 +297,7 @@ struct DummyPass4 : public ModulePass {
             char *fname = NULL;
             if(!dyn_cast<ConstantPointerNull>(op)) {
                 Function *function = NULL;
-                auto alias    = dyn_cast<GlobalAlias>(op->getOperand(0));//dyn_cast<BitCastInst>(op);
+                auto alias    = dyn_cast<GlobalAlias>(op->getOperand(0));
                 auto someth   = op->getOperand(0);
                 if(alias)
                     function = dyn_cast<Function>(alias->getOperand(0));
@@ -339,11 +340,11 @@ struct DummyPass4 : public ModulePass {
 };
 }
 
-char DummyPass::ID = 0;
-char DummyPass2::ID = 0;
-char DummyPass3::ID = 0;
-char DummyPass4::ID = 0;
-static RegisterPass<DummyPass> P1("dummy1", "do nothin");
-static RegisterPass<DummyPass2> P2("dummy2", "do nothin");
-static RegisterPass<DummyPass3> P3("dummy3", "do nothin");
-static RegisterPass<DummyPass4> P4("dummy4", "do nothin");
+char ExtractCallGraph::ID = 0;
+char ExtractAnnotations::ID = 0;
+char ExtractClassHierarchy::ID = 0;
+char ExtractVtables::ID = 0;
+static RegisterPass<ExtractCallGraph> P1("extract-callgraph", "Print YAML Representation of Callgraph including vTable Calls");
+static RegisterPass<ExtractAnnotations> P2("extract-annotations", "Print YAML Representation of Function Annotations");
+static RegisterPass<ExtractClassHierarchy> P3("extract-class-hierarchy", "Print YAML Representation of Class Hierarchy Derived From Constructors");
+static RegisterPass<ExtractVtables> P4("extract-vtables", "Print YAML Representation of VTable's Function Pointer Contents");

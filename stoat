@@ -29,6 +29,7 @@ options.unmangled.blacklist = []
 options.root = "./"
 options.lib  = "libstoat.so"
 options.dir  = []
+options.graphfile = nil
 options.recursive = false
 
 OptionParser.new do |opts|
@@ -53,6 +54,11 @@ OptionParser.new do |opts|
       opts.on("-l", "--llvm-passes LIB",
               "The Library Containing The Needed LLVM Passes") do |lib|
           options.lib = lib
+      end
+
+      opts.on("-g", "--graph-view FILE.png",
+              "The Graph View Output File Name") do |file|
+          options.graphfile = file
       end
 end.parse!
 
@@ -136,6 +142,8 @@ files.each do |f|
     merge_maps(class_high, class_nhigh)
     merge_maps(vtable_information, vtable_ninformation)
 end
+
+`rm sfpv_output.txt`
 
 symbol_list = Set.new
 callgraph.each do |key,val|
@@ -420,36 +428,38 @@ def random_color
     "#" + ([r,g,b].map{|x| to_2hex(x)}.join)
 end
 
-g = GraphViz::new( "G" )
-color_nodes = Hash.new
-property_list.each do |key,val|
-    if(val.contradicted_p)
-        color_nodes[key] ||= "red"
-        val.contradicted_by.each do |x|
-            color_nodes[x] = "black"
+if options.graphfile
+    g = GraphViz::new( "G" )
+    color_nodes = Hash.new
+    property_list.each do |key,val|
+        if(val.contradicted_p)
+            color_nodes[key] ||= "red"
+            val.contradicted_by.each do |x|
+                color_nodes[x] = "black"
+            end
+        elsif(val.realtime_p)
+            color_nodes[key] ||= "green"
         end
-    elsif(val.realtime_p)
-        color_nodes[key] ||= "green"
     end
-end
 
 
-node_list = Hash.new
-color_nodes.each do |key,val|
-    if(demangled_short.include?(key) && demangled_short[key] && demangled_short[key].length != 0)
-        node_list[key] = g.add_node(demangled_short[key], "color"=> val)
+    node_list = Hash.new
+    color_nodes.each do |key,val|
+        if(demangled_short.include?(key) && demangled_short[key] && demangled_short[key].length != 0)
+            node_list[key] = g.add_node(demangled_short[key], "color"=> val)
+        end
     end
-end
 
-callgraph.each do |src, dests|
-    dests.uniq.each do |dest|
-        if(node_list.include?(src) && node_list.include?(dest))
-            if(property_list[dest].non_realtime_p)
-                g.add_edges(node_list[src], node_list[dest], "color"=>(random_color), "style"=>"bold")
-            else
-                g.add_edges(node_list[src], node_list[dest], "color"=>(random_color), "style"=>"dashed")
+    callgraph.each do |src, dests|
+        dests.uniq.each do |dest|
+            if(node_list.include?(src) && node_list.include?(dest))
+                if(property_list[dest].non_realtime_p)
+                    g.add_edges(node_list[src], node_list[dest], "color"=>(random_color), "style"=>"bold")
+                else
+                    g.add_edges(node_list[src], node_list[dest], "color"=>(random_color), "style"=>"dashed")
+                end
             end
         end
     end
+    g.output( :png => options.graphfile)
 end
-g.output( :png => "sfpv_graphics.png" )

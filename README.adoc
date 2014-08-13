@@ -16,15 +16,27 @@ Requires
 - c++filt for demangling
 - ruby for doing the actual deduction logic
 
+How To Build
+~~~~~~~~~~~~
+
+[source,shell]
+-----------------------------------------------------------
+git clone https://github.com/fundamental/stoat && cd stoat
+mkdir build && cd build
+cmake .. && make && make test
+-----------------------------------------------------------
+
 How To Use
 ~~~~~~~~~~
 
 1. Compile all files of a given project using the -emit-llvm option
 2. Annotate a function with __attribute__((annotate("realtime")))
-3. Run the ruby script on the resulting llvm IR files
-4. View the contradictions and either update your code or update the whitelist
+3. Run the stoat on the resulting llvm IR files using the --recursive option
+4. View the contradictions and either update your code or update a whitelist
 5. ???
 6. Profit
+
+For a more explict guide please see the tutorial at XYZ
 
 General LLVM Interacting Design
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -34,7 +46,8 @@ General LLVM Interacting Design
 * Pass 2
 ** Dump Inline annotations on functions/methods for safety
 * Pass 3
-** Extract the class hierarchy
+** Extract the class hierarchy using typecast information preserved within class
+   constructors
 * Pass 4
 ** Dump vTables which can be combined with the call graph from Pass one and
    the hierarchy from pass 3

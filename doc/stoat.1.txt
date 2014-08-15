@@ -30,6 +30,8 @@ OPTIONS
     Enable Recursive Search Mode
 *-l, --llvm-passes LIB*::
     Specify The Library Containing The Needed LLVM Passes
+*-g, --graph-view FILE.png*::
+    The Graph View Output File Name
 
 BUGS
 ----

@@ -28,7 +28,7 @@ source_files = ARGV[5...ARGV.length].join " "
 
 `mkdir tmp-build-dir`
 Dir.chdir 'tmp-build-dir'
-`#{compiler} #{args} -emit-llvm -g -c #{source_files}`
+`#{compiler} #{args} -emit-llvm -c #{source_files}`
 puts `ruby #{deductions} --llvm-passes #{llvm_lib} -w #{whitelist} -b #{blacklist} -r .`
 Dir.chdir '..'
 `rm -r tmp-build-dir`

@@ -120,21 +120,33 @@ function_props = Hash.new
 class_high = Hash.new
 vtable_information = Hash.new
 
+opt = nil
+["opt-3.3", "opt-3.4", "opt-3.5", "opt"].each do|x|
+    if(!`which #{x} 2> /dev/null`.empty?)
+        opt = x
+    end
+end
+
+if(!opt)
+    $stderr.puts "Could Not Find A Usable Opt"
+    exit 1
+end
+
 files.each do |f|
     puts "Parsing '#{f}'..."
-    `opt -load #{options.lib} --extract-callgraph < #{f} > /dev/null 2> sfpv_output.txt`
+    `#{opt} -load #{options.lib} --extract-callgraph < #{f} > /dev/null 2> sfpv_output.txt`
     #puts File.read("sfpv_output.txt")
     ncallgraph = YAML.load_file "sfpv_output.txt"
 
 
-    `opt -load #{options.lib} --extract-annotations < #{f} > /dev/null 2> sfpv_output.txt`
+    `#{opt} -load #{options.lib} --extract-annotations < #{f} > /dev/null 2> sfpv_output.txt`
     #puts File.read("sfpv_output.txt")
     nfunc = YAML.load_file "sfpv_output.txt"
 
-    `opt -load #{options.lib} --extract-class-hierarchy < #{f} > /dev/null 2> sfpv_output.txt`
+    `#{opt} -load #{options.lib} --extract-class-hierarchy < #{f} > /dev/null 2> sfpv_output.txt`
     class_nhigh = YAML.load_file "sfpv_output.txt"
 
-    `opt -load #{options.lib} --extract-vtables < #{f} > /dev/null 2> sfpv_output.txt`
+    `#{opt} -load #{options.lib} --extract-vtables < #{f} > /dev/null 2> sfpv_output.txt`
     vtable_ninformation = YAML.load_file "sfpv_output.txt"
 
     merge_maps(callgraph, ncallgraph)

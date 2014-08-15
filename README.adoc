@@ -30,7 +30,7 @@ How To Use
 ~~~~~~~~~~
 
 1. Compile all files of a given project using the -emit-llvm option
-2. Annotate a function with +__attribute__((annotate("realtime")))+
+2. Annotate a function with +++__attribute__((annotate("realtime")))+++
 3. Run the stoat on the resulting llvm IR files using the --recursive option
 4. View the contradictions and either update your code or update a whitelist
 5. ???

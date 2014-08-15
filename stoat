@@ -121,7 +121,7 @@ class_high = Hash.new
 vtable_information = Hash.new
 
 files.each do |f|
-    p "running #{f} file..."
+    puts "Parsing '#{f}'..."
     `opt -load #{options.lib} --extract-callgraph < #{f} > /dev/null 2> sfpv_output.txt`
     #puts File.read("sfpv_output.txt")
     ncallgraph = YAML.load_file "sfpv_output.txt"
@@ -182,10 +182,11 @@ end
 
 def demangle(symbol_list, demangled_symbols, demangled_short)
     puts "Demangling #{symbol_list.length} Symbols..."
-    f = File.new("tmp_thing.txt", "w")
+    f = File.new("stoat_tmp.txt", "w")
     f.write(symbol_list.to_a.join("\n"))
     f.close
-    demangled_list = `cat tmp_thing.txt | c++filt`.split("\n")
+    demangled_list = `cat stoat_tmp.txt | c++filt`.split("\n")
+    `rm stoat_tmp.txt`
     puts "Resulting in #{demangled_list.length} Items..."
     tmp = 0
     symbol_list.each do |x|
@@ -437,8 +438,15 @@ if options.graphfile
             val.contradicted_by.each do |x|
                 color_nodes[x] = "black"
             end
-        elsif(val.realtime_p)
+        elsif(val.realtime_p && val.has_body_p)
             color_nodes[key] ||= "green"
+            if(callgraph.include? key)
+                callgraph[key].each do |x|
+                    if(property_list.include?(x) && property_list[x].realtime_p && !property_list[x].contradicted_p)
+                        color_nodes[x] = "green"
+                    end
+                end
+            end
         end
     end
 

@@ -63,24 +63,7 @@ memcmp
 vsnprintf
 abort
 
-__builtin_memset
 __assert_fail
-__builtin_va_start
-__builtin_va_end
-__builtin_expect
-__builtin_fabs
-__builtin_fabsf
-__builtin_fabsl
-__builtin_cabs
-__builtin_cabsl
-__builtin_cabsf
-__builtin_labs
-__builtin_llabs
-__builtin_carg
-__builtin_cargl
-__builtin_cargf
-__builtin_memcmp
-__builtin_strlen
 
 fftw_execute
 
@@ -118,10 +101,3 @@ __cxa_guard_abort
 _ZSt9terminatev
 
 hacks_here
-sem_wait
-MidiEvent::operator=
-Jack::static_process
-
-process
-CarlaEngine::CarlaEngineJack::carla_jack_process_callback
-_ZN12CarlaBackend15CarlaEngineJack27carla_jack_process_callbackEjPv

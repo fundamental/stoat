@@ -36,7 +36,8 @@ How To Use
 5. ???
 6. Profit
 
-For a more explict guide please see the tutorial at XYZ
+For a more explict guide please see the tutorial at
+http://log.fundamental-code.com/2014/08/15/stoat-tutorial-example
 
 General LLVM Interacting Design
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

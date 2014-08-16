@@ -111,7 +111,7 @@ if(options.recursive)
 end
 
 if(files.empty?)
-    puts "There Are No Files To Process"
+    $stderr.puts "There Are No Files To Process"
     exit 1
 end
 
@@ -134,7 +134,7 @@ if(!opt)
 end
 
 files.each do |f|
-    puts "Parsing '#{f}'..."
+    $stderr.puts "Parsing '#{f}'..."
     `#{opt} -load #{options.lib} --extract-callgraph < #{f} > /dev/null 2> sfpv_output.txt`
     #puts File.read("sfpv_output.txt")
     ncallgraph = YAML.load_file "sfpv_output.txt"
@@ -167,7 +167,7 @@ callgraph.each do |key,val|
     val = val.uniq
 end
 
-puts "Demangling #{symbol_list.length} Symbols..."
+$stderr.puts "Demangling #{symbol_list.length} Symbols..."
 demangled_symbols = Hash.new
 demangled_short   = Hash.new
 
@@ -194,13 +194,13 @@ def shorten_symbol(sym_)
 end
 
 def demangle(symbol_list, demangled_symbols, demangled_short)
-    puts "Demangling #{symbol_list.length} Symbols..."
+    $stderr.puts "Demangling #{symbol_list.length} Symbols..."
     f = File.new("stoat_tmp.txt", "w")
     f.write(symbol_list.to_a.join("\n"))
     f.close
     demangled_list = `cat stoat_tmp.txt | c++filt`.split("\n")
     `rm stoat_tmp.txt`
-    puts "Resulting in #{demangled_list.length} Items..."
+    $stderr.puts "Resulting in #{demangled_list.length} Items..."
     tmp = 0
     symbol_list.each do |x|
         demangled_symbols[x] = demangled_list[tmp]
@@ -249,7 +249,7 @@ symbol_list.each do |x|
     property_list[x] = DeductionChain.new
 end
 
-puts "Doing Property List Stuff"
+$stderr.puts "Doing Property List Stuff"
 
 #Add information about finding source
 callgraph2 = Hash.new

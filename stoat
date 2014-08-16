@@ -409,6 +409,7 @@ error_count = 0
 property_list.each do |key, value|
     if(value.contradicted_p)
         error_count = error_count+1
+        puts "Error ##{error_count}:"
         pp demangled_symbols[key]
         pp value
         puts "##The Deduction Chain:"

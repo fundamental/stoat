@@ -27,6 +27,7 @@ install(TARGETS stoat LIBRARY DESTINATION lib)
 install(PROGRAMS ${CMAKE_SOURCE_DIR}/stoat DESTINATION bin)
 install(FILES ${CMAKE_SOURCE_DIR}/data/whitelist.txt
               ${CMAKE_SOURCE_DIR}/data/blacklist.txt DESTINATION share/stoat)
+install(SCRIPT cmake/InstallScript.cmake)
 
 ######################################################################
 #               Tests to verify it works                             #

@@ -1,5 +1,4 @@
 #!/usr/bin/ruby
-require 'graphviz'
 require 'optparse'
 require 'ostruct'
 require 'set'
@@ -62,6 +61,10 @@ OptionParser.new do |opts|
           options.graphfile = file
       end
 end.parse!
+
+if(options.graphfile)
+    require 'graphviz'
+end
 
 #White List/Black List Expansion
 white_list = []

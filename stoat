@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+require 'graphviz'
 require 'optparse'
 require 'ostruct'
 require 'set'
@@ -423,7 +424,6 @@ end
 
 puts "Total of #{error_count} error(s)"
 
-require "graphviz"
 
 def to_2hex(x)
     s = x.to_s 16
@@ -466,7 +466,7 @@ if options.graphfile
     node_list = Hash.new
     color_nodes.each do |key,val|
         if(demangled_short.include?(key) && demangled_short[key] && demangled_short[key].length != 0)
-            node_list[key] = g.add_node(demangled_short[key], "color"=> val)
+            node_list[key] = g.add_nodes(demangled_short[key], "color"=> val)
         end
     end
 

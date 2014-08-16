@@ -24,6 +24,7 @@ How To Build
 git clone https://github.com/fundamental/stoat && cd stoat
 mkdir build && cd build
 cmake .. && make && make test
+make install #or just run in place
 -----------------------------------------------------------
 
 How To Use

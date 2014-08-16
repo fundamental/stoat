@@ -15,6 +15,7 @@ Requires
 - A version of clang which dumps *valid* llvm IR files
 - c++filt for demangling
 - ruby for doing the actual deduction logic
+- graphviz gem for callgraph graph rendering
 
 How To Build
 ~~~~~~~~~~~~

@@ -3,7 +3,7 @@ compiler:
     - clang
 before_install:
     - sudo apt-get install -qq llvm-dev
-    - sudo gem install ruby-graphviz
+    - sudo apt-get install -qq ruby-graphviz
 script:
     - mkdir build
     - cd build

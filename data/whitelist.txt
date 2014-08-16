@@ -21,6 +21,7 @@ jack_ringbuffer_peek
 std::__throw_bad_function_call
 std::__throw_bad_alloc
 sem_post sem_getvalue sem_trywait
+pthread_cond_signal
 pthread_mutex_trylock
 pthread_mutex_unlock
 pthread_rwlock_unlock
@@ -51,6 +52,8 @@ log10f
 floor
 floorf
 sqrtf
+lrintf
+llrint
 carg
 asinf
 errx
@@ -93,11 +96,13 @@ std::__throw_length_error
 
 __cxa_begin_catch
 __cxa_rethrow
+__cxa_call_unexpected
 __cxa_end_catch
 __cxa_guard_acquire
 __cxa_atexit
 __cxa_guard_release
 __cxa_guard_abort
+__dynamic_cast
 _ZSt9terminatev
 
 hacks_here

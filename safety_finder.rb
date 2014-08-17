@@ -53,7 +53,7 @@ while !symbols_unknown.empty?
             do_classify &&= !symbols_unknown.include?(x)
             safe        &&= whitelist.include? x
             if(!whitelist.include?(x))
-                rational = x
+                rational ||= x
             end
         end
 

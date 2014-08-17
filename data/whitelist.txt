@@ -38,6 +38,9 @@ sprintf
 
 std::basic_string<char, std::char_traits<char>, std::allocator<char> >::c_str
 
+ceil
+rint
+
 strstr
 memmove
 strncpy
@@ -48,6 +51,7 @@ asinh
 atanh
 atanf
 sqrt
+log10
 log10f
 floor
 floorf

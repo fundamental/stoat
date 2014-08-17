@@ -31,6 +31,7 @@ options.lib  = "libstoat.so"
 options.dir  = []
 options.graphfile = nil
 options.recursive = false
+options.dump_file = nil
 
 OptionParser.new do |opts|
       opts.banner = "Usage: example.rb [options] FILES"
@@ -59,6 +60,10 @@ OptionParser.new do |opts|
       opts.on("-g", "--graph-view FILE.png",
               "The Graph View Output File Name") do |file|
           options.graphfile = file
+      end
+      opts.on("-d", "--dump FILE.yaml",
+              "Dump Information Extracted From LLVM IR") do |file|
+          options.dump_file = file
       end
 end.parse!
 
@@ -259,7 +264,7 @@ callgraph2 = Hash.new
 callgraph.each do |key,value|
     property_list[key].has_body_p = true
     if(!value.include? "nil")
-        callgraph2[key] = value
+        callgraph2[key] = value.uniq
     end
 end
 callgraph = callgraph2
@@ -364,6 +369,29 @@ symbol_list.each do |sym_|
     end
 end
 
+#Dump Known information to a file
+if(options.dump_file)
+    f = File.open(options.dump_file, 'w+')
+    map = Hash.new
+    map["callgraph"] = callgraph
+    map["whitelist"] = Hash.new
+    map["blacklist"] = Hash.new
+    map["has_code"]  = Set.new
+    property_list.each do |key, val|
+        if(val.realtime_p)
+            map["whitelist"][key] = val.reason
+        end
+        if(val.non_realtime_p)
+            map["blacklist"][key] = val.reason
+        end
+        if(val.has_body_p)
+            map["has_code"] << key
+        end
+    end
+
+    f.puts YAML.dump map
+    f.close
+end
 
 
 #Add no source stuff

@@ -42,10 +42,21 @@ add_test(test-one ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
     ${CLANG}
     ${CMAKE_SOURCE_DIR}/data/empty_whitelist.txt
     ${CMAKE_SOURCE_DIR}/data/blacklist.txt
+    nil
     ${SRC}/test/test-input.c)
 set_property(TEST test-one
     PROPERTY PASS_REGULAR_EXPRESSION
      "undefined_function : No Code Or Annotations")
+
+ add_test(suppression
+    ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
+    ${CMAKE_SOURCE_DIR}/stoat
+    ${CMAKE_BINARY_DIR}/libstoat.so
+    ${CLANG}
+    ${CMAKE_SOURCE_DIR}/data/whitelist.txt
+    ${CMAKE_SOURCE_DIR}/data/blacklist.txt
+    ${SRC}/test/suppression_example.txt
+    ${SRC}/test/test-input.c)
 
 #Check that information is translated over multiple translation units
 add_test(multi-translation-unit
@@ -55,6 +66,7 @@ add_test(multi-translation-unit
     ${CLANGPP}
     ${CMAKE_SOURCE_DIR}/data/empty_whitelist.txt
     ${CMAKE_SOURCE_DIR}/data/blacklist.txt
+    nil
     ${SRC}/test/test-input.cpp ${SRC}/test/test-input2.cpp)
 set_property(TEST multi-translation-unit PROPERTY PASS_REGULAR_EXPRESSION
     "undefined_and_used.* : No Code")
@@ -67,6 +79,7 @@ add_test(manual-whitelist
     ${CLANGPP}
     ${CMAKE_SOURCE_DIR}/data/whitelist.txt
     ${CMAKE_SOURCE_DIR}/data/blacklist.txt
+    nil
     ${SRC}/test/math-safety.cpp)
 
 #Verify that virtual methods are handled correctly
@@ -77,6 +90,7 @@ add_test(virtual-calls
     ${CLANGPP}
     ${CMAKE_SOURCE_DIR}/data/whitelist.txt
     ${CMAKE_SOURCE_DIR}/data/blacklist.txt
+    nil
     ${SRC}/test/virtual-methods.cpp)
 
 #Verify that 'operator new' was found
@@ -87,6 +101,7 @@ add_test(op-new
     ${CLANGPP}
     ${CMAKE_SOURCE_DIR}/data/whitelist.txt
     ${CMAKE_SOURCE_DIR}/data/blacklist.txt
+    nil
     ${SRC}/test/cpp-new-detection.cpp)
 set_property(TEST op-new PROPERTY PASS_REGULAR_EXPRESSION
     "new")
@@ -98,6 +113,7 @@ add_test(malloc-blacklist
     ${CLANG}
     ${CMAKE_SOURCE_DIR}/data/whitelist.txt
     ${CMAKE_SOURCE_DIR}/data/blacklist.txt
+    nil
     ${SRC}/test/malloc-blacklist.c)
 
 set_property(TEST malloc-blacklist PROPERTY PASS_REGULAR_EXPRESSION
@@ -110,6 +126,7 @@ add_test(lambda-call
     ${CLANGPP}
     ${CMAKE_SOURCE_DIR}/data/whitelist.txt
     ${CMAKE_SOURCE_DIR}/data/blacklist.txt
+    nil
     ${SRC}/test/lambda-call.cpp)
 set_property(TEST lambda-call PROPERTY PASS_REGULAR_EXPRESSION
     "malloc_of_doooooooooom.* : No Code Or Annotations")

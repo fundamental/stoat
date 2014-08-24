@@ -23,6 +23,7 @@ CurrentDir = File.dirname(__FILE__)
 options = OpenStruct.new
 options.whitelist = [CurrentDir+"/data/whitelist.txt", CurrentDir+"/../share/stoat/whitelist.txt"]
 options.blacklist = [CurrentDir+"/data/blacklist.txt", CurrentDir+"../share/stoat/blacklist.txt"]
+options.suppression = []
 options.unmangled = OpenStruct.new
 options.unmangled.whitelist = []
 options.unmangled.blacklist = []
@@ -44,6 +45,11 @@ OptionParser.new do |opts|
       opts.on("-b", "--blacklist FILE",
               "Define a Blacklist File") do |list|
           options.blacklist << list
+      end
+
+      opts.on("-s", "--suppression FILE",
+              "Define a Suppression File") do |list|
+          options.suppression << list
       end
 
       opts.on("-r", "--recursive DIR",
@@ -97,6 +103,27 @@ options.blacklist.each do |x|
         end
     end
 end
+
+suppression_list = []
+begin
+    tlist = []
+    options.suppression.each do |x|
+        begin
+            tlist.concat File.read(x).split("\n")
+        rescue Errno::ENOENT => err
+            $stderr.puts "Unknown suppression file #{x}"
+        end
+    end
+    tlist.each do |x|
+        tmp = x.split
+        if(tmp.length == 2)
+            suppression_list << tmp
+        else
+            puts "Possible formatting error in suppression file"
+        end
+    end
+end
+
 
 #If there are unmangled files, then mangle them and add them to the end of the
 #mangled lists
@@ -369,6 +396,27 @@ symbol_list.each do |sym_|
     end
 end
 
+#Suppress any bit of the callgraph which is noted in the suppression file
+def remangle(x, demangled_short)
+    demangled_short.each do |a,b|
+        if(b == x)
+            return a
+        end
+    end
+    return a
+end
+
+suppression_list.each do |x|
+    call = remangle(x[0], demangled_short)
+    callee = remangle(x[1], demangled_short)
+    puts "Trying to kill off #{call}->#{callee}"
+
+    if(callgraph.include?(call))
+        callgraph[call].delete(callee)
+    end
+end
+
+
 #Dump Known information to a file
 if(options.dump_file)
     f = File.open(options.dump_file, 'w+')
@@ -515,5 +563,10 @@ if options.graphfile
     end
     g.output( :png => options.graphfile)
 end
+puts "return code is '#{(error_count != 0) ? -1 : 0}'"
 
-return error_count != 0
+if(error_count == 0)
+    exit 0
+else
+    exit(-1)
+end

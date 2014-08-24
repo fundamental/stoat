@@ -515,3 +515,5 @@ if options.graphfile
     end
     g.output( :png => options.graphfile)
 end
+
+return error_count != 0

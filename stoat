@@ -9,6 +9,9 @@ require 'pp'
 def merge_maps(mapa, mapb)
     if mapb
         mapb.each do |key, val|
+            if(key == 82 || key == "82" || val==82 || val=="82")
+                exit(1)
+            end
             if(mapa.has_key?(key) && mapa[key].is_a?(Array))
                 mapa[key].concat val
             else
@@ -22,7 +25,7 @@ CurrentDir = File.dirname(__FILE__)
 
 options = OpenStruct.new
 options.whitelist = [CurrentDir+"/data/whitelist.txt", CurrentDir+"/../share/stoat/whitelist.txt"]
-options.blacklist = [CurrentDir+"/data/blacklist.txt", CurrentDir+"../share/stoat/blacklist.txt"]
+options.blacklist = [CurrentDir+"/data/blacklist.txt", CurrentDir+"/../share/stoat/blacklist.txt"]
 options.suppression = []
 options.unmangled = OpenStruct.new
 options.unmangled.whitelist = []
@@ -33,6 +36,7 @@ options.dir  = []
 options.graphfile = nil
 options.recursive = false
 options.dump_file = nil
+options.minimal_graph = false
 
 OptionParser.new do |opts|
       opts.banner = "Usage: example.rb [options] FILES"
@@ -67,6 +71,13 @@ OptionParser.new do |opts|
               "The Graph View Output File Name") do |file|
           options.graphfile = file
       end
+
+      opts.on("-G", "--graph-minimal-view FILE.png",
+              "The Minimal Graph View Output File Name") do |file|
+          options.graphfile = file
+          options.minimal_graph = true
+      end
+
       opts.on("-d", "--dump FILE.yaml",
               "Dump Information Extracted From LLVM IR") do |file|
           options.dump_file = file
@@ -171,7 +182,9 @@ end
 files.each do |f|
     $stderr.puts "Parsing '#{f}'..."
     `#{opt} -load #{options.lib} --extract-callgraph < #{f} > /dev/null 2> sfpv_output.txt`
-    #puts File.read("sfpv_output.txt")
+    if(File.read("sfpv_output.txt")[/- 82$/])
+        exit
+    end
     ncallgraph = YAML.load_file "sfpv_output.txt"
 
 
@@ -403,7 +416,7 @@ def remangle(x, demangled_short)
             return a
         end
     end
-    return a
+    nil
 end
 
 suppression_list.each do |x|
@@ -521,9 +534,26 @@ def random_color
     "#" + ([r,g,b].map{|x| to_2hex(x)}.join)
 end
 
+def transitive_closure(demangle, map, val, known = [])
+    if(known.include?(val))
+        return Set.new([])
+    end
+    result = Set.new(map[val])
+    result << val
+    result2 = Set.new
+    result.map do |x|
+        if(!known.include?(x) && !result2.include?(x))
+            result2 = result2.union transitive_closure(demangle, map, x, result2.union([val]).union(known))
+        end
+    end
+    #puts "#{demangle[val]} ==> [#{result2.map{|x| demangle[x]}}]"
+    result2.union result
+end
+
 if options.graphfile
     g = GraphViz::new( "G" )
-    color_nodes = Hash.new
+    important_nodes = Set.new
+    color_nodes     = Hash.new
     property_list.each do |key,val|
         if(val.contradicted_p)
             color_nodes[key] ||= "red"
@@ -542,10 +572,40 @@ if options.graphfile
         end
     end
 
+    #For a minimal graph *only* include the realtime functions that eventually
+    #call a non-realtime or ambigious function
+    if(options.minimal_graph)
+        #Invert callgraph for fast graph reduction
+        inverse_callgraph = Hash.new
+        callgraph.each do |key, value|
+            value.each do |dest|
+                if(inverse_callgraph.has_key?(dest))
+                    inverse_callgraph[dest] << key
+                else
+                    inverse_callgraph[dest] = Set.new([key])
+                end
+            end
+        end
+        inverse_callgraph.each do |key,value|
+            inverse_callgraph[key] = value.to_a
+        end
+
+        important_nodes = Set.new
+
+        color_nodes.each do |call,color|
+            if(color == "black")
+                important_nodes = important_nodes.union(transitive_closure(demangled_symbols, inverse_callgraph, call, important_nodes))
+            end
+        end
+    else
+        important_nodes = color_nodes.keys
+    end
+
+
 
     node_list = Hash.new
     color_nodes.each do |key,val|
-        if(demangled_short.include?(key) && demangled_short[key] && demangled_short[key].length != 0)
+        if(demangled_short.include?(key) && demangled_short[key] && demangled_short[key].length != 0 && important_nodes.include?(key))
             node_list[key] = g.add_nodes(demangled_short[key], "color"=> val)
         end
     end

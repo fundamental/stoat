@@ -39,6 +39,55 @@ std::string typeToString(llvm::Type *type)
         return sss.substr(1,sss.length()-2);
 }
 
+bool isCatchCall(llvm::LoadInst *inst)
+{
+    auto getelm   = dyn_cast<GetElementPtrInst>(inst->getOperand(0));
+    if(!getelm) return false;
+
+    auto loadinst = dyn_cast<LoadInst>(getelm->getOperand(0));
+    if(!loadinst) return false;
+
+    auto cast = dyn_cast<BitCastInst>(loadinst->getOperand(0));
+    if(!cast) return false;
+
+    auto call = dyn_cast<CallInst>(cast->getOperand(0));
+    if(!call) return false;
+
+    auto fn = call->getCalledFunction();
+    if(!fn) return false;
+
+    auto name = fn->getName().str();
+    if(name == "__cxa_begin_catch") return true;
+
+    return false;
+}
+
+string getTypeTheHardWay(llvm::Value *val, Function &Fn)
+{
+    //Ok, so normal means failed, but they traced it back to a value
+    //Lets see if this value is cast into a '%class' in any other instruction
+    for(auto &bb:Fn) {
+        for(auto &inst:bb) {
+            //if(dyn_cast<CastInst>(&inst) && inst.getOperand(0)) {
+            //    fprintf(stderr, "possible: ");inst.dump();//getOperand(0)->dump();
+            //} else {
+            //    fprintf(stderr, "impossible: ");inst.dump();
+            //}
+            if(!dyn_cast<BitCastInst>(&inst) || inst.getOperand(0) != val)
+                continue;
+            auto cast = dyn_cast<CastInst>(&inst);
+            string type = typeToString(cast->getDestTy());
+            if(!type.empty() && type[0] == 'c')
+                return type;
+
+            //fprintf(stderr, "Possible type = '%s'\n", typeToString(cast->getDestTy()).c_str());
+
+        }
+    }
+    exit(1);
+    return "";
+}
+
 struct ExtractCallGraph : public FunctionPass {
     static char ID;
     ExtractCallGraph() : FunctionPass(ID) {}
@@ -47,8 +96,10 @@ struct ExtractCallGraph : public FunctionPass {
         AU.setPreservesAll();
     }
 
-    std::string runOnCallInst(CallInst *call)
+    std::string runOnCallInst(CallInst *call, Function &Fn)
     {
+        //fprintf(stderr, "=================================\n");
+        //call->dump();
         auto fn2  = call->getCalledFunction();
         auto it   = call->getCalledValue();
         auto it2  = dyn_cast<GlobalAlias>(it);
@@ -56,7 +107,7 @@ struct ExtractCallGraph : public FunctionPass {
         string vtable_call_name = "";
         if(!fn2 && it2)
             fn2 = dyn_cast<Function>(it2->getOperand(0));
-        if(!fn2 && load) { //This might be a vtable call
+        if(!fn2 && load && !isCatchCall(load)) {//Vtable call
             auto getelm = dyn_cast<GetElementPtrInst>(load->getOperand(0));
             if(getelm && getelm->getNumOperands() == 2) { //this is at least a function pointer at an offset
                 auto offset = dyn_cast<ConstantInt>(getelm->getOperand(1));
@@ -64,8 +115,13 @@ struct ExtractCallGraph : public FunctionPass {
                 if(offset && load) {
                     size_t offset_val = offset->getZExtValue();
                     auto bitcast = dyn_cast<BitCastInst>(load2->getOperand(0));
-                    if(bitcast)
-                        vtable_call_name = typeToString(bitcast->getSrcTy()) + to_s(offset_val);
+                    if(bitcast) {
+                        string type = typeToString(bitcast->getSrcTy());
+                        if(type.empty() || isdigit(type[0])) {
+                            type = getTypeTheHardWay(bitcast->getOperand(0),Fn);
+                        }
+                        vtable_call_name = type + to_s(offset_val);
+                    }
                 }
             }
         }
@@ -74,6 +130,9 @@ struct ExtractCallGraph : public FunctionPass {
             s = fn2->getName().str();
         } else if(!vtable_call_name.empty()) {
             s = vtable_call_name;
+            if(s == "81") {
+                exit(1);
+            }
         } else {
             //fprintf(stderr, "right here...\n");
             //call->dump();
@@ -107,7 +166,7 @@ struct ExtractCallGraph : public FunctionPass {
         for(auto &bb:Fn) {
             for(auto &i:bb) {
                 if(i.getOpcode() == Instruction::Call) {
-                    auto s = runOnCallInst(dyn_cast<CallInst>(&i));
+                    auto s = runOnCallInst(dyn_cast<CallInst>(&i), Fn);
                     if(!s.empty())
                         v.push_back(s);
                 } else if(i.getOpcode() == Instruction::Invoke) {

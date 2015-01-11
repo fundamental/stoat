@@ -166,6 +166,7 @@ callgraph = Hash.new
 function_props = Hash.new
 class_high = Hash.new
 vtable_information = Hash.new
+rtosc_information = Array.new
 
 opt = nil
 ["opt-3.3", "opt-3.4", "opt-3.5", "opt"].each do|x|
@@ -198,10 +199,16 @@ files.each do |f|
     `#{opt} -load #{options.lib} --extract-vtables < #{f} > /dev/null 2> sfpv_output.txt`
     vtable_ninformation = YAML.load_file "sfpv_output.txt"
 
+    `#{opt} -load #{options.lib} --extract-rtosc < #{f} > /dev/null 2> sfpv_output.txt`
+    rtosc_ninformation = YAML.load_file "sfpv_output.txt"
+
     merge_maps(callgraph, ncallgraph)
     merge_maps(function_props, nfunc)
     merge_maps(class_high, class_nhigh)
     merge_maps(vtable_information, vtable_ninformation)
+    if(rtosc_ninformation)
+        rtosc_information.concat rtosc_ninformation
+    end
 end
 
 `rm sfpv_output.txt`
@@ -273,6 +280,7 @@ reason_user_w  = "The Function Was Declared Realtime By A Whitelist"
 reason_user_b  = "The Function Was Declared NonRealtime By A Blacklist"
 reason_code_w  = "The Function Was Declared Realtime By A Code Annotation"
 reason_code_b  = "The Function Was Declared NonRealtime By A Code Annotation"
+reason_rtosc_w = "The Function Was Marked Rtosc Safe"
 reason_deduced = "The Function Was Deduced To Need To Be RealTime As It Was Called By A Realtime Function"
 reason_none    = "Nom Deduction has occured"
 reason_nocode  = "No Code Or Annotations, So The Function is Assumed Unsafe"
@@ -319,6 +327,14 @@ function_props.each do |key, value|
             property_list[key].non_realtime_p = true
             property_list[key].reason         = reason_code_b
         end
+    end
+end
+
+#Add Rtosc information
+rtosc_information.each do |x|
+    if(property_list.include? x["func"])
+        property_list[x["func"]].realtime_p = true
+        property_list[x["func"]].reason     = reason_rtosc_w
     end
 end
 

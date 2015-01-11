@@ -5,7 +5,7 @@ exp exp2f expf expl
 pow powf powl
 fmod fmodf fmodl
 memset memcpy
-strlen strcpy strcmp snprintf
+strlen strcpy strcmp snprintf strtol strcasecmp
 index
 jack_port_get_buffer
 jack_midi_clear_buffer jack_midi_get_event_count jack_midi_event_get

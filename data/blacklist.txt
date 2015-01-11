@@ -1,1 +1,9 @@
-malloc free
+malloc free realloc
+fwrite vfprintf
+access
+pthread_mutex_lock
+getcwd
+open
+_ZNSo5flushEv
+_ZdaPv
+_Znaj

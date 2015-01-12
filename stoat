@@ -248,7 +248,7 @@ def shorten_symbol(sym_)
     sym.reverse
 end
 
-def demangle(symbol_list, demangled_symbols, demangled_short)
+def demangle(symbol_list, demangled_symbols, demangled_short, rtosc)
     $stderr.puts "Demangling #{symbol_list.length} Symbols..."
     f = File.new("stoat_tmp.txt", "w")
     f.write(symbol_list.to_a.join("\n"))
@@ -270,8 +270,16 @@ def demangle(symbol_list, demangled_symbols, demangled_short)
             demangled_short[key] = m
         end
     end
+    #Use Rtosc Symbols to get a better demangling
+    rtosc.each do |x|
+        key = x["func"]
+        val = x["name"]
+        if(demangled_short.include?(key))
+            demangled_short[key] = val
+        end
+    end
 end
-demangle(symbol_list, demangled_symbols, demangled_short)
+demangle(symbol_list, demangled_symbols, demangled_short, rtosc_information)
 
 #pp demangled_short
 
@@ -508,7 +516,7 @@ end
 #Regenerate Demangled Symbols
 demangled_symbols = Hash.new
 demangled_short   = Hash.new
-demangle(symbol_list, demangled_symbols, demangled_short)
+demangle(symbol_list, demangled_symbols, demangled_short, rtosc_information)
 
 error_count = 0
 property_list.each do |key, value|

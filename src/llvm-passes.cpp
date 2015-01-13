@@ -13,18 +13,17 @@ using std::string;
 
 namespace {
 
-template<class T>
-std::string stringFrom(T x)
-{
-    std::stringstream ss;
-    ss << x;
-    return ss.str();
-}
+/*****************************************************************************
+ *                         Utility Methods                                   *
+ *****************************************************************************/
+
 
 template<class T>
 std::string to_s(T x)
 {
-    return stringFrom(x);
+    std::stringstream ss;
+    ss << x;
+    return ss.str();
 }
 
 std::string typeToString(llvm::Type *type)
@@ -39,6 +38,27 @@ std::string typeToString(llvm::Type *type)
         return sss.substr(1,sss.length()-2);
 }
 
+//Print an escaped YAML string
+void escapeOutput(string s)
+{
+    llvm::errs() << "\"";
+    for(int i=0; i<(int)s.length(); ++i) {
+        char c = s[i];
+        if(c == 0)
+            llvm::errs() << "\\0";
+        else if(c == '"')
+            llvm::errs() << "\\\"";
+        else if(c == '\\')
+            llvm::errs() << "\\\\";
+        else
+            llvm::errs() << c;
+
+
+    }
+    llvm::errs() << "\"";
+}
+
+//Determine if a load contains a reference to the start of a catch block
 bool isCatchCall(llvm::LoadInst *inst)
 {
     auto getelm   = dyn_cast<GetElementPtrInst>(inst->getOperand(0));
@@ -62,30 +82,22 @@ bool isCatchCall(llvm::LoadInst *inst)
     return false;
 }
 
+//Identify a value by looking at the possible casts that it may undergo
 string getTypeTheHardWay(llvm::Value *val, Function &Fn)
 {
     //Ok, so normal means failed, but they traced it back to a value
     //Lets see if this value is cast into a '%class' in any other instruction
     for(auto &bb:Fn) {
         for(auto &inst:bb) {
-            //if(dyn_cast<CastInst>(&inst) && inst.getOperand(0)) {
-            //    fprintf(stderr, "possible: ");inst.dump();//getOperand(0)->dump();
-            //} else {
-            //    fprintf(stderr, "impossible: ");inst.dump();
-            //}
             if(!dyn_cast<BitCastInst>(&inst) || inst.getOperand(0) != val)
                 continue;
             auto cast = dyn_cast<CastInst>(&inst);
             string type = typeToString(cast->getDestTy());
             if(!type.empty() && type[0] == 'c')
                 return type;
-
-            //fprintf(stderr, "Possible type = '%s'\n", typeToString(cast->getDestTy()).c_str());
-
         }
     }
-    exit(1);
-    return "";
+    return "unknown-type-name"; //failure...
 }
 
 struct ExtractCallGraph : public FunctionPass {
@@ -98,8 +110,6 @@ struct ExtractCallGraph : public FunctionPass {
 
     std::string runOnCallInst(CallInst *call, Function &Fn)
     {
-        //fprintf(stderr, "=================================\n");
-        //call->dump();
         auto fn2  = call->getCalledFunction();
         auto it   = call->getCalledValue();
         auto it2  = dyn_cast<GlobalAlias>(it);
@@ -130,18 +140,13 @@ struct ExtractCallGraph : public FunctionPass {
             s = fn2->getName().str();
         } else if(!vtable_call_name.empty()) {
             s = vtable_call_name;
+            //Failure to obtain typename
+            //(8 is a reference to an 8bit pointer)
+            //(1 is an offset)
             if(s == "81") {
                 exit(1);
             }
         } else {
-            //fprintf(stderr, "right here...\n");
-            //call->dump();
-            //fprintf(stderr, "FN: ");
-            //call->getCalledValue()->dump();
-            //fprintf(stderr, "ARG0: ");
-            //call->getOperand(0)->dump();
-            //fprintf(stderr, "ARG1: ");
-            //call->getOperand(1)->dump();
             return "";
         }
         if(s == "llvm.dbg.value" || s == "llvm.var.annotation"
@@ -207,8 +212,6 @@ struct ExtractAnnotations : public ModulePass {
             fprintf(stderr, "    - %s\n", dyn_cast<ConstantDataArray>(s->getOperand(0))->getAsString().str().c_str());
         } else
             fprintf(stderr, "We have a dinosaur\n");
-
-
     }
 
     bool runOnModule(Module &m) override {
@@ -373,6 +376,7 @@ struct ExtractVtables : public ModulePass {
             if(tmp)
                 *tmp = 0;
             fprintf(stderr, "    %d: %s\n", i-2, fname);
+            free(fname);
         }
     }
 
@@ -398,24 +402,6 @@ struct ExtractVtables : public ModulePass {
     }
 };
 
-void escapeOutput(string s)
-{
-    llvm::errs() << "\"";
-    for(int i=0; i<s.length(); ++i) {
-        char c = s[i];
-        if(c == 0)
-            llvm::errs() << "\\0";
-        else if(c == '"')
-            llvm::errs() << "\\\"";
-        else if(c == '\\')
-            llvm::errs() << "\\\\";
-        else
-            llvm::errs() << c;
-
-
-    }
-    llvm::errs() << "\"";
-}
 struct ExtractRtosc : public FunctionPass {
     static char ID;
     ExtractRtosc() : FunctionPass(ID) {}
@@ -432,9 +418,6 @@ struct ExtractRtosc : public FunctionPass {
             return false;
         //fprintf(stderr, "=================================\n");
         //getelm->dump();
-        auto offset = dyn_cast<ConstantInt>(getelm->getOperand(1));
-        //auto offset2 = dyn_cast<ConstantInt>(getelm->getOperand(2));
-        auto varDef = dyn_cast<GetElementPtrInst>(getelm->getOperand(0));
         auto inst = dyn_cast<Instruction>(getelm->getOperand(0));
         std::string data_str;
         llvm::raw_string_ostream ss(data_str);
@@ -451,7 +434,6 @@ struct ExtractRtosc : public FunctionPass {
             return false;
         if(dyn_cast<ConstantInt>(getelm->getOperand(2))->getZExtValue() != 0)
             return false;
-        auto offset = dyn_cast<ConstantInt>(getelm->getOperand(1));
         auto inst = dyn_cast<Instruction>(getelm->getOperand(0));
         std::string data_str;
         llvm::raw_string_ostream ss(data_str);
@@ -474,7 +456,6 @@ struct ExtractRtosc : public FunctionPass {
             return false;
         if(dyn_cast<ConstantInt>(getelm->getOperand(2))->getZExtValue() != 1)
             return false;
-        auto offset = dyn_cast<ConstantInt>(getelm->getOperand(1));
         auto inst = dyn_cast<Instruction>(getelm->getOperand(0));
         std::string data_str;
         llvm::raw_string_ostream ss(data_str);
@@ -527,9 +508,9 @@ struct ExtractRtosc : public FunctionPass {
 #define NAME     (2)
 #define META     (3)
     bool runOnFunction(Function &Fn) override {
-        if(Fn.getName() == "__cxx_global_var_init" || Fn.getName() == "__cxx_global_var_init1")
-            ;//fprintf(stderr, "Function '%s'\n", Fn.getName().str().c_str());
-        else
+        //TODO check for the existance of an __cxx_global_var_init$N for an
+        //arbitrary N
+        if(!(Fn.getName() == "__cxx_global_var_init" || Fn.getName() == "__cxx_global_var_init1"))
             return false;
 
         int state = NONE;
@@ -542,38 +523,18 @@ struct ExtractRtosc : public FunctionPass {
         //collect name then meta then func
         for(auto &bb:Fn) {
             for(auto &i:bb) {
+                auto opcode = i.getOpcode();
                 //i.dump();
-                if(state == NONE) {
-                    if(i.getOpcode() == Instruction::GetElementPtr) {
-                        if(isCallback(dyn_cast<GetElementPtrInst>(&i))) {
-                            state = CALLBACK;
-                            continue;
-                        }
-                    }
+                if(state == NONE && opcode == Instruction::GetElementPtr) {
+                    auto inst = dyn_cast<GetElementPtrInst>(&i);
+                    if(isCallback(inst)) state = CALLBACK;
+                    if(isName(inst))     state = NAME;
+                    if(isMeta(inst))     state = META;
+                    continue;
                 }
-                if(state == NONE) {
-                    if(i.getOpcode() == Instruction::GetElementPtr) {
-                        if(isName(dyn_cast<GetElementPtrInst>(&i))) {
-                            state = NAME;
-                            continue;
-                        }
-                    }
-                }
-                if(state == NONE) {
-                    if(i.getOpcode() == Instruction::GetElementPtr) {
-                        if(isMeta(dyn_cast<GetElementPtrInst>(&i))) {
-                            state = META;
-                            continue;
-                        }
-
-                    }
-                }
-
 
                 if(state == CALLBACK) {
                     assert(i.getOpcode() == Instruction::Invoke);
-                    //fprintf(stderr, "Operands = %d\n", i.getNumOperands());
-                    //i.dump();
                     //There should be 4 arguments
                     //0: std::function memory pointer
                     //1: std::function<> constructor
@@ -587,31 +548,14 @@ struct ExtractRtosc : public FunctionPass {
                 }
                 if(state == NAME) {
                     assert(i.getOpcode() == Instruction::Store);
-                    //fprintf(stderr, "Name extract 333333333333333:\n");
-                    //i.dump();
-                    //i.getOperand(0)->dump();
-                    //i.getOperand(0)->getType()->dump();
-                    //fprintf(stderr, "SDF: %s\n", dyn_cast<ConstantExpr>(i.getOperand(0))->getOpcodeName());
                     auto data = dyn_cast<ConstantExpr>(i.getOperand(0))->getOperand(0);
-                    //data->getOperand(0)->getType()->dump();
                     auto arr  = dyn_cast<ConstantDataArray>(data->getOperand(0));
-                    //fprintf(stderr, "asdf %d\n", data->getNumOperands());
-                    //if(arr)
-                    //    fprintf(stderr, "data: '%s'\n", arr->getRawDataValues().str().c_str());
-                    //else
-                    //    fprintf(stderr, "nope..\n");
                     current.name = arr->getRawDataValues().str();
-                    //fprintf(stderr, "%s\n", runOnLambdaConstructor(*dyn_cast<Function>(i.getOperand(1))).c_str());
                     state = NONE;
                 }
 
                 if(state == META) {
                     assert(i.getOpcode() == Instruction::Store);
-                    //fprintf(stderr, "Name extract 333333333333333:\n");
-                    //i.dump();
-                    //i.getOperand(0)->dump();
-                    //i.getOperand(0)->getType()->dump();
-                    //fprintf(stderr, "SDF: %s\n", dyn_cast<ConstantExpr>(i.getOperand(0))->getOpcodeName());
                     if(!dyn_cast<ConstantExpr>(i.getOperand(0))) {
                         current.meta = "";
                         state = NONE;
@@ -619,19 +563,8 @@ struct ExtractRtosc : public FunctionPass {
                     }
 
                     auto data = dyn_cast<ConstantExpr>(i.getOperand(0))->getOperand(0);
-                    //data->getOperand(0)->getType()->dump();
                     auto arr  = dyn_cast<ConstantDataArray>(data->getOperand(0));
-                    //fprintf(stderr, "asdf %d\n", data->getNumOperands());
-                    auto s = arr->getRawDataValues();
-                    //if(arr) {
-                    //    fprintf(stderr, "meta: '");
-                    //    for(int i=0; i<s.size(); ++i)
-                    //        fputc(s[i], stderr);
-                    //    fprintf(stderr, "'\n");
-                    //} else
-                    //    fprintf(stderr, "nope..\n");
                     current.meta = arr->getRawDataValues().str();
-                    //fprintf(stderr, "%s\n", runOnLambdaConstructor(*dyn_cast<Function>(i.getOperand(1))).c_str());
                     state = NONE;
                 }
             }
@@ -646,14 +579,6 @@ struct ExtractRtosc : public FunctionPass {
             llvm::errs() << "\n";
             llvm::errs() << "  func: " << x.func << "\n";
         }
-        //if(!v.empty()) {
-        //    fprintf(stderr, "%s :\n", Fn.getName().str().c_str());
-        //    for(auto x:v)
-        //        fprintf(stderr, "    - %s\n", x.c_str());
-        //} else {
-        //    fprintf(stderr, "%s :\n", Fn.getName().str().c_str());
-        //    fprintf(stderr, "    - nil\n");
-        //}
         return false;
     }
 };

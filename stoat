@@ -180,6 +180,7 @@ if(!opt)
     exit 1
 end
 
+#Gather All Information from bitcode files
 files.each do |f|
     $stderr.puts "Parsing '#{f}'..."
     `#{opt} -load #{options.lib} --extract-callgraph < #{f} > /dev/null 2> sfpv_output.txt`
@@ -213,6 +214,7 @@ end
 
 `rm sfpv_output.txt`
 
+#Identify all symbols that are observed in the callgraph
 symbol_list = Set.new
 callgraph.each do |key,val|
     symbol_list << key
@@ -226,6 +228,7 @@ $stderr.puts "Demangling #{symbol_list.length} Symbols..."
 demangled_symbols = Hash.new
 demangled_short   = Hash.new
 
+#Generate a shortened demangled name by removing the function arguments
 def shorten_symbol(sym_)
     paren = 0
     finished = false
@@ -248,6 +251,7 @@ def shorten_symbol(sym_)
     sym.reverse
 end
 
+#Translate from mangled symbols into a list of demangled items
 def demangle(symbol_list, demangled_symbols, demangled_short, rtosc)
     $stderr.puts "Demangling #{symbol_list.length} Symbols..."
     f = File.new("stoat_tmp.txt", "w")

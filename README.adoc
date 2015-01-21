@@ -49,6 +49,7 @@ Features
 - Out-of-line whitelists/blacklists
 - Out-of-line suppression files
 - Graph capabilities for safe or contradicting graph
+- Support for dispatch tree analysis within librtosc
 
 How To Use
 ~~~~~~~~~~

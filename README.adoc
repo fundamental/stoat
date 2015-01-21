@@ -14,7 +14,7 @@ called.
 Why?
 ~~~~
 
-Maintaining a large codebase in C/C++ can make it very difficult to know what
+Maintaining a large codebase in C/C\++ can make it very difficult to know what
 code ends up calling what other routines.
 This is further complicated when there is some segregation within one codebase
 which may not be at all clear in implementation.

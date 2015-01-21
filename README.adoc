@@ -1,21 +1,34 @@
-Realtime Function Static Analysis
----------------------------------
+Stoat - Realtime Function Static Analysis
+-----------------------------------------
 
-Based Upon a Four Pass System, callgraph information is extracted (virtual
-method dispatch included) for C/C++ programs compiled to llvm IR
-representations.
-This information is used in conjunction with external whitelist files to find
-calls to blacklisted or graylisted functions which could result in realtime
-unsafe behavior.
+Stoat is a tool to assert properties about the callgraph of programs/libraries.
+The primary usage of this tool is to analyze programs which need to perform
+realtime operations in a portion of a mixed codebase.
+This is done by identifying all functions which can transitively be called from
+some known root function which must be realtime.
+If any unsafe function which could block for an arbitrary amount of time is
+found in this transitive closure, then an error is emitted to indicate where the
+improper behavior can be found and what backtrace is responsible for it getting
+called.
+
+Why?
+~~~~
+
+Maintaining a large codebase in C/C++ can make it very difficult to know what
+code ends up calling what other routines.
+This is further complicated when there is some segregation within one codebase
+which may not be at all clear in implementation.
+This is further complicated by the opaqueness of some C++ techniques, such as
+virtual overloading, operator overloading, and implicit conversions.
 
 Requires
 ~~~~~~~~
 
-- Recentish LLVM 3.3+
-- A version of clang which dumps *valid* llvm IR files
-- c++filt for demangling
-- ruby for doing the actual deduction logic
-- graphviz gem for callgraph graph rendering
+- LLVM 3.3+
+- Clang 3.3+
+- c++filt
+- ruby
+- graphviz gem (OPTIONAL) for callgraph renderings
 
 How To Build
 ~~~~~~~~~~~~
@@ -28,31 +41,26 @@ cmake .. && make && make test
 make install #or just run in place
 -----------------------------------------------------------
 
+Features
+~~~~~~~~
+
+- Inline safety markers +++__attribute__((annotate("realtime")))+++
+- Inline hazard markers +++__attribute__((annotate("non-realtime")))+++
+- Out-of-line whitelists/blacklists
+- Out-of-line suppression files
+- Graph capabilities for safe or contradicting graph
+
 How To Use
 ~~~~~~~~~~
 
-1. Compile all files of a given project using the -emit-llvm option
-2. Annotate a function with +++__attribute__((annotate("realtime")))+++
+1. Annotate a root realtime function with +++__attribute__((annotate("realtime")))+++
+2. Compile all files with the -emit-llvm option
 3. Run the stoat on the resulting llvm IR files using the --recursive option
-4. View the contradictions and either update your code or update a whitelist
-5. ???
-6. Profit
+4. View the contradictions
+5. Optionally redo the analysis using the -G option to graphically view the
+   contradictions
+6. Update your code, a whitelist, or suppression list
+7. Enjoy the safer code
 
-For a more explict guide please see the tutorial at
+For a more explicit guide please see the tutorial at
 http://log.fundamental-code.com/2014/08/15/stoat-tutorial-example
-
-General LLVM Interacting Design
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* Pass 1
-** Dump CallGraph information including stubs for virtual calls
-* Pass 2
-** Dump Inline annotations on functions/methods for safety
-* Pass 3
-** Extract the class hierarchy using typecast information preserved within class
-   constructors
-* Pass 4
-** Dump vTables which can be combined with the call graph from Pass one and
-   the hierarchy from pass 3
-
-

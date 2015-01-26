@@ -17,6 +17,7 @@ jack_get_current_transport_frame
 jack_get_buffer_size
 jack_midi_event_write
 jack_ringbuffer_peek
+jack_last_frame_time
 
 std::__throw_bad_function_call
 std::__throw_bad_alloc

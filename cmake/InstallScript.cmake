@@ -5,5 +5,6 @@ execute_process(COMMAND ldconfig
 if(Result EQUAL 0)
     message(STATUS "Ran ldconfig...")
 else()
-    message(FATAL_ERROR "Error: ldconfig ${Result}\n${Output}")
+    message(WARNING "Warning: ldconfig ${Result}\n${Output}")
+    message(WARNING "         You may need to manually specify --llvm-passes")
 endif()

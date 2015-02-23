@@ -71,8 +71,15 @@ asinf
 errx
 warnx
 __fmod_finite
+__fmodf_finite
 __expf_finite
 __logf_finite
+__muldc3
+__asinf_finite
+__log10f_finite
+__sinh_finite
+__ctyle_b_loc
+
 
 memcmp
 vsnprintf
@@ -119,4 +126,5 @@ _ZSt9terminatev
 
 hacks_here
 struct.rtosc::RtData0
+struct.rtosc::RtData1
 struct.rtosc::RtData2

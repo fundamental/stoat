@@ -550,7 +550,8 @@ struct ExtractRtosc : public FunctionPass {
                     assert(i.getOpcode() == Instruction::Store);
                     auto data = dyn_cast<ConstantExpr>(i.getOperand(0))->getOperand(0);
                     auto arr  = dyn_cast<ConstantDataArray>(data->getOperand(0));
-                    current.name = arr->getRawDataValues().str();
+                    if(arr)
+                        current.name = arr->getRawDataValues().str();
                     state = NONE;
                 }
 
@@ -564,7 +565,8 @@ struct ExtractRtosc : public FunctionPass {
 
                     auto data = dyn_cast<ConstantExpr>(i.getOperand(0))->getOperand(0);
                     auto arr  = dyn_cast<ConstantDataArray>(data->getOperand(0));
-                    current.meta = arr->getRawDataValues().str();
+                    if(arr)
+                        current.meta = arr->getRawDataValues().str();
                     state = NONE;
                 }
             }

@@ -214,19 +214,27 @@ struct ExtractAnnotations : public ModulePass {
             fprintf(stderr, "We have a dinosaur\n");
     }
 
+    void doInner(Constant *ggg)
+    {
+        unsigned ops = ggg->getNumOperands();
+        if(ops > 2)
+            ops = 2;
+        for(unsigned i=0; i<ops; ++i) {
+            auto op = ggg->getOperand(i);
+            if(auto o = dyn_cast<ConstantExpr>(op))
+                handleNested(o->getOperand(0));
+        }
+    }
+
     bool runOnModule(Module &m) override {
         auto g = m.getNamedGlobal("llvm.global.annotations");
         if(g) {
             auto gg = dyn_cast<ConstantArray>(g->getOperand(0));
-            auto ggg = gg->getOperand(0);
-            unsigned ops = ggg->getNumOperands();
-            if(ops > 2)
-                ops = 2;
-            for(unsigned i=0; i<ops; ++i) {
-                auto op = ggg->getOperand(i);
-                if(auto o = dyn_cast<ConstantExpr>(op))
-                    handleNested(o->getOperand(0));
-            }
+            //printf("orig ops = %d\n", gg->getNumOperands());
+            unsigned ops = gg->getNumOperands();
+
+            for(unsigned i=0; i<ops; ++i)
+                doInner(gg->getOperand(i));
         }
         return false;
     }
@@ -241,14 +249,42 @@ struct ExtractClassHierarchy : public FunctionPass {
         AU.setPreservesAll();
     }
 
-    string getMethodName(char *name)
+    string getFullName(string name)
     {
-        char buffer[1024];
-        memset(buffer, 0, 1024);
+        if(name.empty())
+            return "";
+        char buffer1[1024] = {0};
+        strncpy(buffer1, name.c_str(), 1023);
+
+        int end = strlen(buffer1);
+        int paren = 0;
+        bool can_terminate = false;
+        while(end > 0) {
+            if(buffer1[end] == ')') {
+                can_terminate = true;
+                paren++;
+            }
+            if(buffer1[end] == '(') {
+                paren--;
+                if(paren == 0 && can_terminate)
+                    break;
+            }
+            end--;
+        }
+        buffer1[end] = 0;
+        return buffer1;
+    }
+
+    string getMethodName(const char *name)
+    {
         if(!name)
             return "";
-        char *pos = rindex(name, ':');
-        char *btmp = buffer;
+        char *name_ = strdup(name);
+
+        char buffer[1024];
+        char *pos = rindex(name_, ':');
+        //printf("pos = '%s'\n", pos);
+        char *btmp = name_;
         if(!pos)
             return "";
         pos++;
@@ -256,16 +292,20 @@ struct ExtractClassHierarchy : public FunctionPass {
         {
             *btmp++ = *pos++;
         }
-        return buffer;
+        if(*pos == '\0')
+            *btmp = '\0';
+        return name_;
     }
 
-    bool isConstructorp(char *name)
+    bool isConstructorp(const char *name)
     {
         //Isolate Class Name
         string cname = getMethodName(name);
+        //printf("cname = '%s'\n", cname.c_str());
+
         if(cname.empty())
             return false;
-        if(strstr(name, (cname + "::" + cname + "(").c_str()))
+        if(strstr(name, (cname + "::" + cname).c_str()))
             return true;
         return false;
     }
@@ -277,14 +317,33 @@ struct ExtractClassHierarchy : public FunctionPass {
                 std::string data_str;
                 llvm::raw_string_ostream ss(data_str);
                 possible->getDestTy()->getScalarType()->getScalarType()->print(ss);
-                if(ss.str().substr(0,6) == "%class")
-                    return ss.str();
+                std::string s = ss.str();
+                int l = s.length();
+                if(s.substr(0,6) == "%class")
+                    return s.substr(7, l-8);
+                if(s.substr(0,7) == "%\"class")
+                    return s.substr(8, l-10);
+                if(s.substr(0,7) == "%struct")
+                    return ss.str().substr(8, l-9);
+                if(s.substr(0,8) == "%\"struct")
+                    return s.substr(9, l-11);
             }
         }
         return "";
     }
 
-    void findSuperClasses(Function &Fn, string name)
+    string className(const char *name)
+    {
+        char *res = strdup(name);
+        char *end_of_name = (char*)rindex(res, ':');
+        if(end_of_name && end_of_name > res+1) {
+            end_of_name[-1] = 0;
+            return res;
+        }
+        return "";
+    }
+
+    void findSuperClasses(Function &Fn, string name, string fullname)
     {
         //The first IR Element is an alloca for the this pointer
         //later there is a load of this %this.addr
@@ -308,15 +367,19 @@ struct ExtractClassHierarchy : public FunctionPass {
                             if(x == super)
                                 not_already_here = false;
                         if(not_already_here)
-                            class_list.push_back(super.substr(7, super.length()-8));
+                            class_list.push_back(super);
                     }
                 }
             }
         }
 
+        //printf("name = '%s'\n", name.c_str());
+        //printf("fullname = '%s'\n", fullname.c_str());
+        //printf("classname = '%s'\n",
+        //        className(fullname.c_str()).c_str());
         std::unique(class_list.begin(), class_list.end());
         if(!class_list.empty()) {
-            fprintf(stderr, "%s:\n", name.c_str());
+            fprintf(stderr, "%s:\n", className(fullname.c_str()).c_str());
             for(auto x:class_list)
                 fprintf(stderr, "    - %s\n", x.c_str());
         }
@@ -327,9 +390,13 @@ struct ExtractClassHierarchy : public FunctionPass {
     bool runOnFunction(Function &Fn) override {
         int status = 0;
         char *realname = abi::__cxa_demangle(Fn.getName().str().c_str(), 0, 0, &status);
-        if(isConstructorp(realname)) {
-            //fprintf(stderr, "I'm in a constructor '%s'\n", realname);
-            findSuperClasses(Fn, getMethodName(realname));
+        //printf("realname='%s'\n", realname);
+        if(realname) {
+            string fullname = getFullName(realname);
+            //printf("fullname='%s'\n", fullname.c_str());
+            if(isConstructorp(fullname.c_str())) {
+                findSuperClasses(Fn, getMethodName(realname), fullname);
+            }
         }
         return false;
     }

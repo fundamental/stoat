@@ -423,6 +423,8 @@ class_high.each do |sub, supers|
         50.times do |x|
             testing = "class.#{super_}#{x}"
             source = "class.#{sub}#{x}"
+            #puts testing
+            #puts source
             if(symbol_list.include? testing)
                 callgraph[testing] ||= []
                 callgraph[testing] << source

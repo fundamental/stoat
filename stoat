@@ -377,7 +377,7 @@ end
 property_list.each do |key, value|
     if(!value.realtime_p &&
        !value.non_realtime_p)
-        if(white_list.include?(key) || white_list.include?(demangled_short[key]) || wild_match(wild_list, demangled_short[key]))
+        if(white_list.include?(key) || white_list.include?(demangled_short[key]) || wild_match(whitelist_wild, demangled_short[key]))
             value.realtime_p = true
             value.reason = reason_user_w
         end

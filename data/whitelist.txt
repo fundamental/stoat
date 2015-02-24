@@ -78,7 +78,7 @@ __muldc3
 __asinf_finite
 __log10f_finite
 __sinh_finite
-__ctyle_b_loc
+__ctype_b_loc
 
 
 memcmp

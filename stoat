@@ -293,6 +293,7 @@ reason_user_b  = "The Function Was Declared NonRealtime By A Blacklist"
 reason_code_w  = "The Function Was Declared Realtime By A Code Annotation"
 reason_code_b  = "The Function Was Declared NonRealtime By A Code Annotation"
 reason_rtosc_w = "The Function Was Marked Rtosc Safe"
+reason_rtosc_b = "The Function Was Marked Rtosc Unsafe"
 reason_deduced = "The Function Was Deduced To Need To Be RealTime As It Was Called By A Realtime Function"
 reason_none    = "Nom Deduction has occured"
 reason_nocode  = "No Code Or Annotations, So The Function is Assumed Unsafe"
@@ -343,18 +344,40 @@ function_props.each do |key, value|
 end
 
 #Add Rtosc information
+puts "Unsafe functions: "
 rtosc_information.each do |x|
-    if(property_list.include? x["func"])
+    if(property_list.include?(x["func"]) &&
+       !(x["meta"].include?("non-realtime")))
         property_list[x["func"]].realtime_p = true
         property_list[x["func"]].reason     = reason_rtosc_w
+    elsif(property_list.include?(x["func"]))
+        property_list[x["func"]].realtime_p = false
+        property_list[x["func"]].reason     = reason_rtosc_b
     end
 end
 
 #Add WhiteList Information
+whitelist_wild = Array.new
+white_list.each do |x|
+    if(x.include? "*")
+        whitelist_wild.push(Regexp.new(x))
+    end
+end
+
+def wild_match(wild_list, str)
+    wild_list.each do |x|
+        if(x.match(str))
+            return true
+        end
+    end
+    return false
+end
+
+
 property_list.each do |key, value|
     if(!value.realtime_p &&
        !value.non_realtime_p)
-        if(white_list.include?(key) || white_list.include?(demangled_short[key]))
+        if(white_list.include?(key) || white_list.include?(demangled_short[key]) || wild_match(wild_list, demangled_short[key]))
             value.realtime_p = true
             value.reason = reason_user_w
         end

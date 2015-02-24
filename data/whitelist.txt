@@ -80,6 +80,10 @@ __log10f_finite
 __sinh_finite
 __ctype_b_loc
 
+std::rint
+rint
+strcat
+strncat
 
 memcmp
 vsnprintf

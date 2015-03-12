@@ -4,6 +4,7 @@ require 'ostruct'
 require 'set'
 require 'yaml'
 require 'pp'
+require 'colorize'
 
 #Modifies mapa s.t. it includes the mapb info
 def merge_maps(mapa, mapb)
@@ -289,15 +290,15 @@ demangle(symbol_list, demangled_symbols, demangled_short, rtosc_information)
 
 
 reasons = {
-    reason_user_w:  "Realtime (Whitelist)",
-    reason_user_b:  "NonRealtime (Blacklist)",
-    reason_code_w:  "Realtime (Annotation)",
-    reason_code_b:  "NonRealtime (Annotation)",
-    reason_rtosc_w: "Rtosc Safe",
-    reason_rtosc_b: "Rtosc Unsafe",
-    reason_deduced: "Deduced Realtime",
-    reason_none:    "No Deduction has occured",
-    reason_nocode:  "Assumed Unsafe",
+    reason_user_w:  ["Realtime (Whitelist)", :green],
+    reason_user_b:  ["NonRealtime (Blacklist)", :red],
+    reason_code_w:  ["Realtime (Annotation)", :green],
+    reason_code_b:  ["NonRealtime (Annotation)", :red],
+    reason_rtosc_w: ["Rtosc Safe", :green],
+    reason_rtosc_b: ["Rtosc Unsafe", :red],
+    reason_deduced: ["Deduced Realtime", :yellow],
+    reason_none:    ["No Deduction has occured", :default],
+    reason_nocode:  ["Assumed Unsafe", :red],
 }
 
 class DeductionChain
@@ -503,10 +504,10 @@ if(options.dump_file)
     map["has_code"]  = Set.new
     property_list.each do |key, val|
         if(val.realtime_p)
-            map["whitelist"][key] = reasons[val.reason]
+            map["whitelist"][key] = reasons[val.reason][0]
         end
         if(val.non_realtime_p)
-            map["blacklist"][key] = reasons[val.reason]
+            map["blacklist"][key] = reasons[val.reason][0]
         end
         if(val.has_body_p)
             map["has_code"] << key
@@ -557,26 +558,28 @@ demangled_symbols = Hash.new
 demangled_short   = Hash.new
 demangle(symbol_list, demangled_symbols, demangled_short, rtosc_information)
 
+puts "\n\n"
+
 error_count = 0
 property_list.each do |key, value|
     if(value.contradicted_p)
         error_count = error_count+1
         puts "Error ##{error_count}:"
-        pp demangled_symbols[key]
+        puts demangled_symbols[key].bold
         pp value
-        puts "##The Deduction Chain:"
+        puts "##The Deduction Chain:".bold
         next_prop = value.deduction_source
         while(next_prop) do
-            reason = reasons[property_list[next_prop].reason]
-            puts " - #{demangled_symbols[next_prop]} : #{reason}"
+            string, color = reasons[property_list[next_prop].reason]
+            puts " - #{demangled_symbols[next_prop]} : #{string.colorize(color)}"
             next_prop = property_list[next_prop].deduction_source
         end
-        puts "##The Contradiction Reasons:"
+        puts "##The Contradiction Reasons:".bold
         value.contradicted_by.each do |x|
-            reason = reasons[property_list[x].reason]
-            puts " - #{demangled_symbols[x]} : #{reason}"
+            string, color = reasons[property_list[x].reason]
+            puts " - #{demangled_symbols[x]} : #{string.colorize(color)}"
         end
-        puts "\n\n\n"
+        puts "\n\n"
     end
 end
 

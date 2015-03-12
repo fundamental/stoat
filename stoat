@@ -38,6 +38,7 @@ options.graphfile = nil
 options.recursive = false
 options.dump_file = nil
 options.minimal_graph = false
+options.colorize = false
 
 OptionParser.new do |opts|
       opts.banner = "Usage: example.rb [options] FILES"
@@ -83,10 +84,19 @@ OptionParser.new do |opts|
               "Dump Information Extracted From LLVM IR") do |file|
           options.dump_file = file
       end
+
+      opts.on("-c", "--colorize",
+              "Colorize Output") do
+          options.colorize = true
+      end
 end.parse!
 
 if(options.graphfile)
     require 'graphviz'
+end
+
+if(!options.colorize)
+    String.disable_colorization = true
 end
 
 #White List/Black List Expansion

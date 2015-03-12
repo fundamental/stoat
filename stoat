@@ -480,6 +480,14 @@ suppression_list.each do |x|
     if(callgraph.include?(call))
         callgraph[call].delete(callee)
     end
+
+    call = x[0]
+    callee = x[1]
+    puts "Trying to kill off #{call}->#{callee}"
+
+    if(callgraph.include?(call))
+        callgraph[call].delete(callee)
+    end
 end
 
 

@@ -288,15 +288,15 @@ demangle(symbol_list, demangled_symbols, demangled_short, rtosc_information)
 #pp demangled_short
 
 
-reason_user_w  = "The Function Was Declared Realtime By A Whitelist"
-reason_user_b  = "The Function Was Declared NonRealtime By A Blacklist"
-reason_code_w  = "The Function Was Declared Realtime By A Code Annotation"
-reason_code_b  = "The Function Was Declared NonRealtime By A Code Annotation"
-reason_rtosc_w = "The Function Was Marked Rtosc Safe"
-reason_rtosc_b = "The Function Was Marked Rtosc Unsafe"
-reason_deduced = "The Function Was Deduced To Need To Be RealTime As It Was Called By A Realtime Function"
-reason_none    = "Nom Deduction has occured"
-reason_nocode  = "No Code Or Annotations, So The Function is Assumed Unsafe"
+reason_user_w  = "Realtime (Whitelist)"
+reason_user_b  = "NonRealtime (Blacklist)"
+reason_code_w  = "Realtime (Annotation)"
+reason_code_b  = "NonRealtime (Annotation)"
+reason_rtosc_w = "Rtosc Safe"
+reason_rtosc_b = "Rtosc Unsafe"
+reason_deduced = "Deduced Realtime"
+reason_none    = "No Deduction has occured"
+reason_nocode  = "Assumed Unsafe"
 
 class DeductionChain
     attr_accessor :deduction_source, :reason, :realtime_p, :non_realtime_p, :has_body_p, :contradicted_p, :contradicted_by

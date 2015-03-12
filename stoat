@@ -288,15 +288,17 @@ demangle(symbol_list, demangled_symbols, demangled_short, rtosc_information)
 #pp demangled_short
 
 
-reason_user_w  = "Realtime (Whitelist)"
-reason_user_b  = "NonRealtime (Blacklist)"
-reason_code_w  = "Realtime (Annotation)"
-reason_code_b  = "NonRealtime (Annotation)"
-reason_rtosc_w = "Rtosc Safe"
-reason_rtosc_b = "Rtosc Unsafe"
-reason_deduced = "Deduced Realtime"
-reason_none    = "No Deduction has occured"
-reason_nocode  = "Assumed Unsafe"
+reasons = {
+    reason_user_w:  "Realtime (Whitelist)",
+    reason_user_b:  "NonRealtime (Blacklist)",
+    reason_code_w:  "Realtime (Annotation)",
+    reason_code_b:  "NonRealtime (Annotation)",
+    reason_rtosc_w: "Rtosc Safe",
+    reason_rtosc_b: "Rtosc Unsafe",
+    reason_deduced: "Deduced Realtime",
+    reason_none:    "No Deduction has occured",
+    reason_nocode:  "Assumed Unsafe",
+}
 
 class DeductionChain
     attr_accessor :deduction_source, :reason, :realtime_p, :non_realtime_p, :has_body_p, :contradicted_p, :contradicted_by
@@ -304,7 +306,7 @@ class DeductionChain
 
     def initialize
         @deduction_source = nil
-        @reason           = "No Deduction has occured"
+        @reason           = :reason_none
         @realtime_p       = false
         @non_realtime_p   = false
         @has_body_p       = false
@@ -335,10 +337,10 @@ function_props.each do |key, value|
     if(property_list.include? key)
         if(value.include? 'realtime')
             property_list[key].realtime_p = true
-            property_list[key].reason     = reason_code_w
+            property_list[key].reason     = :reason_code_w
         elsif(value.include? 'non-realtime')
             property_list[key].non_realtime_p = true
-            property_list[key].reason         = reason_code_b
+            property_list[key].reason         = :reason_code_b
         end
     end
 end
@@ -349,10 +351,10 @@ rtosc_information.each do |x|
     if(property_list.include?(x["func"]) &&
        !(x["meta"].include?("non-realtime")))
         property_list[x["func"]].realtime_p = true
-        property_list[x["func"]].reason     = reason_rtosc_w
+        property_list[x["func"]].reason     = :reason_rtosc_w
     elsif(property_list.include?(x["func"]))
         property_list[x["func"]].realtime_p = false
-        property_list[x["func"]].reason     = reason_rtosc_b
+        property_list[x["func"]].reason     = :reason_rtosc_b
     end
 end
 
@@ -379,7 +381,7 @@ property_list.each do |key, value|
        !value.non_realtime_p)
         if(white_list.include?(key) || white_list.include?(demangled_short[key]) || wild_match(whitelist_wild, demangled_short[key]))
             value.realtime_p = true
-            value.reason = reason_user_w
+            value.reason = :reason_user_w
         end
     end
 end
@@ -390,7 +392,7 @@ property_list.each do |key, value|
        !value.non_realtime_p)
         if(black_list.include?(key) || black_list.include?(demangled_short[key]))
             value.non_realtime_p = true
-            value.reason = reason_user_b
+            value.reason = :reason_user_b
         end
     end
 end
@@ -501,10 +503,10 @@ if(options.dump_file)
     map["has_code"]  = Set.new
     property_list.each do |key, val|
         if(val.realtime_p)
-            map["whitelist"][key] = val.reason
+            map["whitelist"][key] = reasons[val.reason]
         end
         if(val.non_realtime_p)
-            map["blacklist"][key] = val.reason
+            map["blacklist"][key] = reasons[val.reason]
         end
         if(val.has_body_p)
             map["has_code"] << key
@@ -520,7 +522,7 @@ end
 property_list.each do |key, value|
     if(!value.has_body_p && !value.realtime_p && !value.non_realtime_p)
         value.non_realtime_p = true
-        value.reason         = reason_nocode
+        value.reason         = :reason_nocode
     end
 end
 
@@ -539,7 +541,7 @@ while do_stuff
                     elsif(!property_list[x].realtime_p)
                         property_list[x].realtime_p = true
                         property_list[x].deduction_source = key
-                        property_list[x].reason = reason_deduced
+                        property_list[x].reason = :reason_deduced
                         do_stuff = true
                     end
                 end
@@ -565,12 +567,14 @@ property_list.each do |key, value|
         puts "##The Deduction Chain:"
         next_prop = value.deduction_source
         while(next_prop) do
-            puts " - #{demangled_symbols[next_prop]} : #{property_list[next_prop].reason}"
+            reason = reasons[property_list[next_prop].reason]
+            puts " - #{demangled_symbols[next_prop]} : #{reason}"
             next_prop = property_list[next_prop].deduction_source
         end
         puts "##The Contradiction Reasons:"
         value.contradicted_by.each do |x|
-            puts " - #{demangled_symbols[x]} : #{property_list[x].reason}"
+            reason = reasons[property_list[x].reason]
+            puts " - #{demangled_symbols[x]} : #{reason}"
         end
         puts "\n\n\n"
     end

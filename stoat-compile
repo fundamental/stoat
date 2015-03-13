@@ -22,6 +22,10 @@ NARGV.each do |x|
         x = x+".bc"
     elsif(x=="\\-o")
         modify_next = true
+    elsif(x=="\\-O3")
+        next
+    elsif(x=="\\-O2")
+        next
     end
     new_args << x
 end

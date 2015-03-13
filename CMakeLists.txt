@@ -46,7 +46,7 @@ add_test(test-one ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
     ${SRC}/test/test-input.c)
 set_property(TEST test-one
     PROPERTY PASS_REGULAR_EXPRESSION
-     "undefined_function : No Code Or Annotations")
+     "undefined_function : Assumed Unsafe")
 
  add_test(suppression
     ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
@@ -69,7 +69,7 @@ add_test(multi-translation-unit
     nil
     ${SRC}/test/test-input.cpp ${SRC}/test/test-input2.cpp)
 set_property(TEST multi-translation-unit PROPERTY PASS_REGULAR_EXPRESSION
-    "undefined_and_used.* : No Code")
+    "undefined_and_used.* : Assumed Unsafe")
 
 #Verify that functions can be externally annotated
 add_test(manual-whitelist
@@ -117,7 +117,7 @@ add_test(malloc-blacklist
     ${SRC}/test/malloc-blacklist.c)
 
 set_property(TEST malloc-blacklist PROPERTY PASS_REGULAR_EXPRESSION
-    "malloc : The Function Was Declared NonRealtime By A Blacklist")
+    "malloc : NonRealtime \\(Blacklist\\)")
 
 add_test(lambda-call
     ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
@@ -129,4 +129,4 @@ add_test(lambda-call
     nil
     ${SRC}/test/lambda-call.cpp)
 set_property(TEST lambda-call PROPERTY PASS_REGULAR_EXPRESSION
-    "malloc_of_doooooooooom.* : No Code Or Annotations")
+    "malloc_of_doooooooooom.* : Assumed Unsafe")

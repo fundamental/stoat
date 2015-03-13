@@ -84,7 +84,7 @@ OptionParser.new do |opts|
           options.dump_file = file
       end
 
-      opts.on("-c", "--colorize",
+      opts.on("-c", "--color",
               "Colorize Output") do
           options.colorize = true
       end

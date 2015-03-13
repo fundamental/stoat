@@ -203,25 +203,32 @@ end
 #Gather All Information from bitcode files
 files.each do |f|
     $stderr.puts "Parsing '#{f}'..."
-    `#{opt} -load #{options.lib} --extract-callgraph < #{f} > /dev/null 2> sfpv_output.txt`
-    if(File.read("sfpv_output.txt")[/- 82$/])
-        exit
-    end
-    ncallgraph = YAML.load_file "sfpv_output.txt"
 
-
-    `#{opt} -load #{options.lib} --extract-annotations < #{f} > /dev/null 2> sfpv_output.txt`
-    #puts File.read("sfpv_output.txt")
-    nfunc = YAML.load_file "sfpv_output.txt"
-
-    `#{opt} -load #{options.lib} --extract-class-hierarchy < #{f} > /dev/null 2> sfpv_output.txt`
-    class_nhigh = YAML.load_file "sfpv_output.txt"
-
-    `#{opt} -load #{options.lib} --extract-vtables < #{f} > /dev/null 2> sfpv_output.txt`
-    vtable_ninformation = YAML.load_file "sfpv_output.txt"
-
-    `#{opt} -load #{options.lib} --extract-rtosc < #{f} > /dev/null 2> sfpv_output.txt`
-    rtosc_ninformation = YAML.load_file "sfpv_output.txt"
+    cg = Thread.new {
+        `#{opt} -load #{options.lib} --extract-callgraph < #{f} > /dev/null 2> stoat_callgraph.txt`
+    }
+    an = Thread.new {
+        `#{opt} -load #{options.lib} --extract-annotations < #{f} > /dev/null 2> stoat_annotations.txt`
+    }
+    ch = Thread.new {
+        `#{opt} -load #{options.lib} --extract-class-hierarchy < #{f} > /dev/null 2> stoat_class.txt`
+    }
+    vt = Thread.new {
+        `#{opt} -load #{options.lib} --extract-vtables < #{f} > /dev/null 2> stoat_vtable.txt`
+    }
+    rt = Thread.new {
+        `#{opt} -load #{options.lib} --extract-rtosc < #{f} > /dev/null 2> stoat_rtosc.txt`
+    }
+    cg.join
+    an.join
+    ch.join
+    vt.join
+    rt.join
+    ncallgraph          = YAML.load_file "stoat_callgraph.txt"
+    nfunc               = YAML.load_file "stoat_annotations.txt"
+    class_nhigh         = YAML.load_file "stoat_class.txt"
+    vtable_ninformation = YAML.load_file "stoat_vtable.txt"
+    rtosc_ninformation  = YAML.load_file "stoat_rtosc.txt"
 
     merge_maps(callgraph, ncallgraph)
     merge_maps(function_props, nfunc)
@@ -232,7 +239,11 @@ files.each do |f|
     end
 end
 
-`rm sfpv_output.txt`
+`rm stoat_callgraph.txt`
+`rm stoat_annotations.txt`
+`rm stoat_class.txt`
+`rm stoat_vtable.txt`
+`rm stoat_rtosc.txt`
 
 #Identify all symbols that are observed in the callgraph
 symbol_list = Set.new

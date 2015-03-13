@@ -1,0 +1,30 @@
+#!/usr/bin/ruby
+
+#Pretend to be clang
+NARGV = ARGV.collect {|x| x.gsub(/(?=\W)/, '\\')}
+puts `clang #{NARGV.join(' ')}`
+err_code = $?.to_i
+if(err_code != 0)
+    exit(false)
+end
+
+modify_next = false
+do_compile  = false
+modified    = false
+new_args = []
+NARGV.each do |x|
+    if(x  == "\\-c")
+        do_compile = true
+    end
+    if(modify_next)
+        modify_next = false
+        modified = true
+        x = x+".bc"
+    elsif(x=="\\-o")
+        modify_next = true
+    end
+    new_args << x
+end
+if(do_compile && modified)
+    `clang -emit-llvm #{new_args.join(' ')} 2>/dev/null`
+end

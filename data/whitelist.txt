@@ -1,5 +1,6 @@
 cos cosl cosf
 sin sinl sinf
+tan tanl tanf
 abs fabs fabsf fabsl cabs
 exp exp2f expf expl
 pow powf powl
@@ -66,6 +67,8 @@ floorf
 sqrtf
 lrintf
 llrint
+round
+roundf
 carg
 asinf
 errx
@@ -78,6 +81,7 @@ __muldc3
 __asinf_finite
 __log10f_finite
 __sinh_finite
+__sinhf_finite
 __ctype_b_loc
 
 std::rint
@@ -127,6 +131,8 @@ __cxa_guard_release
 __cxa_guard_abort
 __dynamic_cast
 _ZSt9terminatev
+
+rand
 
 hacks_here
 struct.rtosc::RtData0

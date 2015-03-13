@@ -133,3 +133,15 @@ add_test(lambda-call
     ${SRC}/test/lambda-call.cpp)
 set_property(TEST lambda-call PROPERTY PASS_REGULAR_EXPRESSION
     "malloc_of_doooooooooom.* : Assumed Unsafe")
+
+add_test(namespace-disambiguation
+    ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
+    ${CMAKE_SOURCE_DIR}/stoat
+    ${CMAKE_BINARY_DIR}/libstoat.so
+    ${CLANGPP}
+    ${CMAKE_SOURCE_DIR}/data/whitelist.txt
+    ${CMAKE_SOURCE_DIR}/data/blacklist.txt
+    nil
+    ${SRC}/test/namespaces.cpp)
+set_property(TEST namespace-disambiguation PROPERTY PASS_REGULAR_EXPRESSION
+    "Total of 2 error")

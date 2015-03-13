@@ -4,7 +4,6 @@ require 'ostruct'
 require 'set'
 require 'yaml'
 require 'pp'
-require 'colorize'
 
 #Modifies mapa s.t. it includes the mapb info
 def merge_maps(mapa, mapb)
@@ -95,8 +94,18 @@ if(options.graphfile)
     require 'graphviz'
 end
 
-if(!options.colorize)
-    String.disable_colorization = true
+if(options.colorize)
+    require 'colorize'
+else
+    #String.disable_colorization = true
+    class String
+        def bold
+            self
+        end
+        def colorize(color)
+            self
+        end
+    end
 end
 
 #White List/Black List Expansion

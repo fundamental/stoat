@@ -1,9 +1,11 @@
+image::stoat-logo.png[align="center"]
+
 Stoat - Realtime Function Static Analysis
 -----------------------------------------
 
 Stoat is a tool to assert properties about the callgraph of programs/libraries.
 The primary usage of this tool is to analyze programs which need to perform
-realtime operations in a portion of a mixed codebase.
+hard realtime operations in a portion of a mixed codebase.
 This is done by identifying all functions which can transitively be called from
 some known root function which must be realtime.
 If any unsafe function which could block for an arbitrary amount of time is
@@ -29,6 +31,7 @@ Requires
 - c++filt
 - ruby
 - graphviz gem (OPTIONAL) for callgraph renderings
+- colorize gem (OPTIONAL) for colored output
 
 How To Build
 ~~~~~~~~~~~~
@@ -55,7 +58,8 @@ How To Use
 ~~~~~~~~~~
 
 1. Annotate a root realtime function with +++__attribute__((annotate("realtime")))+++
-2. Compile all files with the -emit-llvm option
+2. Compile all files with CC=stoat-compile CXX=stoat-compile++ or just compile
+   files with clang's -emit-llvm flag
 3. Run the stoat on the resulting llvm IR files using the --recursive option
 4. View the contradictions
 5. Optionally redo the analysis using the -G option to graphically view the

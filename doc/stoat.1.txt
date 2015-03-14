@@ -26,12 +26,20 @@ OPTIONS
     Define a Whitelist File
 *-b, --blacklist FILE*::
     Define a Blacklist File
+*-s, --suppression FILE*::
+    Define a Suppression File
 *-r, --recursive DIR*::
     Enable Recursive Search Mode
 *-l, --llvm-passes LIB*::
     Specify The Library Containing The Needed LLVM Passes
 *-g, --graph-view FILE.png*::
     The Graph View Output File Name
+*-G, --graph-minimal-view FILE.png*::
+    The Minimal Graph View Output File Name
+*-d, --dump FILE.yaml*::
+    Dump Information Extracted From LLVM IR
+*-c, --color*::
+    Colorize Output
 
 BUGS
 ----

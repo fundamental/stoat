@@ -69,3 +69,8 @@ How To Use
 
 For a more explicit guide please see the tutorial at
 http://log.fundamental-code.com/2014/08/15/stoat-tutorial-example
+
+License
+~~~~~~~
+
+Stoat is available under the GPLv3 license

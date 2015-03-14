@@ -200,6 +200,13 @@ if(!opt)
     exit 1
 end
 
+library_test = `opt -load #{options.lib} < /dev/null 2>&1`
+if(/Error opening/.match library_test)
+    $stderr.puts "Could Not Find A Usable libstoat.so"
+    exit 1
+end
+
+
 #Gather All Information from bitcode files
 files.each do |f|
     $stderr.puts "Parsing '#{f}'..."

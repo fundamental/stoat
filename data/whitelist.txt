@@ -38,7 +38,7 @@ isalnum isalpha isascii isblank iscntrl isdigit isgraph islower isprint ispunct
 isspace isupper isxdigit
 sprintf
 
-std::basic_string<char, std::char_traits<char>, std::allocator<char> >::c_str
+# std::basic_string<char, std::char_traits<char>, std::allocator<char> >::c_str
 _ZNKSs5c_strEv
 _ZNKSs6lengthEv
 
@@ -134,7 +134,7 @@ _ZSt9terminatev
 
 rand
 
-hacks_here
+# hacks here
 struct.rtosc::RtData0
 struct.rtosc::RtData1
 struct.rtosc::RtData2

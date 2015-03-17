@@ -23,6 +23,7 @@ require 'ostruct'
 require 'set'
 require 'yaml'
 require 'pp'
+require 'csv'
 
 #Modifies mapa s.t. it includes the mapb info
 def merge_maps(mapa, mapb)
@@ -127,13 +128,19 @@ else
     end
 end
 
+def read_file(file)
+    return File.read(file).split("\n") \
+        .select{|x| /^\s*(#.*)?$/ !~ x} \
+        .map{|x| CSV.parse(x, col_sep: ' ')}.flatten(1)
+end
+
 #White List/Black List Expansion
 white_list = []
 tmp = 0
 options.whitelist.each do |x|
     begin
         tmp = tmp + 1
-        white_list.concat File.read(x).split
+        white_list.concat read_file(x).flatten(1)
     rescue Errno::ENOENT => err
         if(tmp > 2) #Non default
             $stderr.puts("Unknown whitelist file #{x}")
@@ -146,7 +153,7 @@ tmp = 0
 options.blacklist.each do |x|
     begin
         tmp = tmp + 1
-        black_list.concat File.read(x).split
+        black_list.concat read_file(x).flatten(1)
     rescue Errno::ENOENT => err
         if(tmp > 2) #Non default
             $stderr.puts "Unknown blacklist file #{x}"
@@ -159,14 +166,14 @@ begin
     tlist = []
     options.suppression.each do |x|
         begin
-            tlist.concat File.read(x).split("\n")
+            tlist.concat read_file(x)
         rescue Errno::ENOENT => err
             $stderr.puts "Unknown suppression file #{x}"
         end
     end
     tlist.each do |x|
-        tmp = x.split
-        if(tmp.length == 2)
+        if(x.length == 3 and x[1] == '==>')
+            tmp = x[0], x[2]
             suppression_list << tmp
         else
             puts "Possible formatting error in suppression file"

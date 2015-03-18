@@ -7,6 +7,8 @@ pow powf powl
 fmod fmodf fmodl
 memset memcpy
 strlen strcpy strcmp snprintf strtol strcasecmp
+toupper towupper
+strcasestr
 index
 jack_port_get_buffer
 jack_midi_clear_buffer jack_midi_get_event_count jack_midi_event_get
@@ -66,6 +68,7 @@ floor
 floorf
 sqrtf
 lrintf
+rintf
 llrint
 round
 roundf

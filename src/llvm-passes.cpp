@@ -58,6 +58,16 @@ std::string typeToString(llvm::Type *type)
         return sss.substr(1,sss.length()-2);
 }
 
+string removeClassStruct(string s)
+{
+    const char *cs = s.c_str();
+    if(cs==strstr(cs, "struct."))
+        return cs+7;
+    if(cs==strstr(cs, "class."))
+        return cs+6;
+    return cs;
+};
+
 //Print an escaped YAML string
 void escapeOutput(string s)
 {
@@ -128,6 +138,24 @@ struct ExtractCallGraph : public FunctionPass {
         AU.setPreservesAll();
     }
 
+    //Occasionally there seems to be a class.realname.integer
+    //The .integer doesn't seem to be needed, so this routine removes it
+    std::string removeUniqueTail(std::string name)
+    {
+        std::string replacement;
+        int dots = 0;
+        for(int i=0; i<name.length(); ++i) {
+            char cur = name[i];
+            if(cur == '.')
+                dots++;
+            if(cur == '.' && dots == 2)
+                replacement.append(".subtype");
+            else
+                replacement.push_back(cur);
+        }
+        return removeClassStruct(replacement);
+    }
+
     std::string runOnCallInst(CallInst *call, Function &Fn)
     {
         auto fn2  = call->getCalledFunction();
@@ -150,7 +178,7 @@ struct ExtractCallGraph : public FunctionPass {
                         if(type.empty() || isdigit(type[0])) {
                             type = getTypeTheHardWay(bitcast->getOperand(0),Fn);
                         }
-                        vtable_call_name = type + to_s(offset_val);
+                        vtable_call_name = removeUniqueTail(type) + "$vtable" + to_s(offset_val);
                     }
                 }
             }
@@ -312,8 +340,8 @@ struct ExtractClassHierarchy : public FunctionPass {
         {
             *btmp++ = *pos++;
         }
-        if(*pos == '\0')
-            *btmp = '\0';
+        //if(*pos == '\0')
+        *btmp = '\0';
         return name_;
     }
 
@@ -325,7 +353,21 @@ struct ExtractClassHierarchy : public FunctionPass {
 
         if(cname.empty())
             return false;
-        if(strstr(name, (cname + "::" + cname).c_str()))
+        if(strstr(name, (cname + "::" + cname).c_str())) //nice and simple case
+            return true;
+        return false;
+    }
+
+    //XXX make this more accurate
+    bool isTemplateConstructorp(const char *name)
+    {
+        //printf("name = '%s'\n", name);
+        string cname = getMethodName(name);
+        //printf("cname = '%s'\n", cname.c_str());
+
+        if(cname.empty())
+            return false;
+        if(strstr(name, (cname + "<").c_str())) //possible template case
             return true;
         return false;
     }
@@ -363,7 +405,7 @@ struct ExtractClassHierarchy : public FunctionPass {
         return "";
     }
 
-    void findSuperClasses(Function &Fn, string name, string fullname)
+    void findSuperClasses(Function &Fn, string name, string fullname, string alias="")
     {
         //The first IR Element is an alloca for the this pointer
         //later there is a load of this %this.addr
@@ -398,24 +440,52 @@ struct ExtractClassHierarchy : public FunctionPass {
         //printf("classname = '%s'\n",
         //        className(fullname.c_str()).c_str());
         std::unique(class_list.begin(), class_list.end());
-        if(!class_list.empty()) {
+        if(!class_list.empty() || !alias.empty()) {
             fprintf(stderr, "%s:\n", className(fullname.c_str()).c_str());
+            if(!alias.empty())
+                fprintf(stderr, "    - alias.%s\n", removeClassStruct(alias).c_str());
             for(auto x:class_list)
-                fprintf(stderr, "    - %s\n", x.c_str());
+                fprintf(stderr, "    - %s\n", removeUniqueTail(x).c_str());
         }
 
 
     }
+    
+    std::string removeUniqueTail(std::string name)
+    {
+        char *dpos = rindex((char*)name.c_str(), '.');
+        int off = INT_MAX;
+        if(dpos && isdigit(dpos[1]))
+            off = dpos-name.c_str();
+
+
+        std::string replacement;
+        int dots = 0;
+        for(int i=0; i<name.length(); ++i) {
+            char cur = name[i];
+            if(i == off)
+                replacement.append(".subtype");
+            else
+                replacement.push_back(cur);
+        }
+        return replacement;
+    }
 
     bool runOnFunction(Function &Fn) override {
+        assert(isTemplateConstructorp("mididings::Patch::ModuleImpl<mididings::Patch::Chain>::ModuleImpl()"));
         int status = 0;
         char *realname = abi::__cxa_demangle(Fn.getName().str().c_str(), 0, 0, &status);
-        //printf("realname='%s'\n", realname);
+        //fprintf(stderr, "realname='%s'\n", realname);
         if(realname) {
             string fullname = getFullName(realname);
             //printf("fullname='%s'\n", fullname.c_str());
             if(isConstructorp(fullname.c_str())) {
+                //fprintf(stderr, "It's a constructor\n");
                 findSuperClasses(Fn, getMethodName(realname), fullname);
+            } else if(isTemplateConstructorp(fullname.c_str())) {
+                //fprintf(stderr, "It's a template constructor\n");
+                std::string alias_type = Fn.getArgumentList().front().getType()->getPointerElementType()->getScalarType()->getStructName().str();
+                findSuperClasses(Fn, getMethodName(realname), fullname, removeUniqueTail(alias_type));
             }
         }
         return false;

@@ -34,6 +34,12 @@ def merge_maps(mapa, mapb)
             end
             if(mapa.has_key?(key) && mapa[key].is_a?(Array))
                 mapa[key].concat val
+            elsif(mapa.has_key?(key))
+                #puts "Hey Look At Me..."
+                #puts "key = #{key}"
+                #puts "old = #{mapa[key]}"
+                #puts "val = #{val}"
+                mapa[key] = val
             else
                 mapa[key] = val
             end
@@ -278,6 +284,58 @@ end
 `rm stoat_vtable.txt`
 `rm stoat_rtosc.txt`
 
+#puts "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+#pp class_high
+#puts "___________---___________________________----------__________--------__________-----"
+#Rewrite class information based upon inverting template renaming
+alias_map = Hash.new
+class_high.each do |key, val|
+    val.each do |x|
+        if(/^alias/.match x)
+            #puts "alias '#{key}'->'#{x[6,x.length]}'"
+            alias_map[x[6,x.length]] = key
+        end
+    end
+    val.delete_if { |x| /^alias/.match x }
+end
+
+#pp alias_map
+
+class_high.each do |key, val|
+    replace = []
+    val.each do |x|
+        if(alias_map.has_key?(x))
+            replace << alias_map[x]
+        else
+            replace << x
+        end
+    end
+    class_high[key] = val
+end
+
+callgraph.each do |parent, children|
+    replace = []
+    children.each do |child|
+        parts = child.split '$'
+        if(parts.length == 2)
+            if(alias_map.has_key?(parts[0]))
+                parts[0] = alias_map[parts[0]]
+            end
+            if((/^class/.match parts.join("$")) ||
+               (/^struct/.match parts.join("$")))
+                replace << parts.join("$")
+            else
+                replace << parts.join("$")
+            end
+        else
+            replace << child
+        end
+    end
+    callgraph[parent] = replace
+end
+
+
+
 #Identify all symbols that are observed in the callgraph
 symbol_list = Set.new
 callgraph.each do |key,val|
@@ -465,7 +523,8 @@ end
 vtable_information.each do |key, value|
     value.each do |key2, value2|
         if(value2 != "(none)" && value2 != "__cxa_pure_virtual")
-            new_key = "class.#{key}#{key2}"
+            new_key = "#{key}$vtable#{key2}"
+            #puts "Forming a new link #{new_key} => #{value2}"
             if(!callgraph.include? new_key)
                 callgraph[new_key] = []
             end
@@ -483,12 +542,12 @@ vtable_information.each do |key, value|
     end
 end
 
-#Add Calls Down the hierarchy [THIS IS BUGGED XXX]
+#Add Calls Down the hierarchy
 class_high.each do |sub, supers|
     supers.each do |super_|
         50.times do |x|
-            testing = "class.#{super_}#{x}"
-            source = "class.#{sub}#{x}"
+            testing = "#{super_}$vtable#{x}"
+            source = "#{sub}$vtable#{x}"
             #puts testing
             #puts source
             if(symbol_list.include? testing)

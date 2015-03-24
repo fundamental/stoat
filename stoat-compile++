@@ -21,7 +21,7 @@
 
 #Pretend to be clang
 NARGV = ARGV.collect {|x| x.gsub(/(?=\W)/, '\\')}
-puts `clang++ #{NARGV.join(' ')}`
+print `clang++ #{NARGV.join(' ')}`
 err_code = $?.to_i
 if(err_code != 0)
     exit(false)

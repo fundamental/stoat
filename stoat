@@ -796,7 +796,7 @@ if options.graphfile
     node_list = Hash.new
     color_nodes.each do |key,val|
         if(demangled_short.include?(key) && demangled_short[key] && demangled_short[key].length != 0 && important_nodes.include?(key))
-            node_list[key] = g.add_nodes(demangled_short[key], "color"=> val)
+            node_list[key] = g.add_nodes(demangled_short[key], "color"=> val, :shape=>:box)
         end
     end
 

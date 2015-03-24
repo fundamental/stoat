@@ -21,6 +21,7 @@ jack_get_buffer_size
 jack_midi_event_write
 jack_ringbuffer_peek
 jack_last_frame_time
+jack_midi_max_event_size
 
 std::__throw_bad_function_call
 std::__throw_bad_alloc
@@ -45,6 +46,7 @@ _ZNKSs5c_strEv
 _ZNKSs6lengthEv
 
 ceil
+ceilf
 rint
 isnan
 
@@ -64,6 +66,8 @@ atanf
 sqrt
 log10
 log10f
+log2
+log2f
 floor
 floorf
 sqrtf
@@ -74,6 +78,7 @@ round
 roundf
 carg
 asinf
+copysign
 errx
 warnx
 __fmod_finite

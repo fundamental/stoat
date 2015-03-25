@@ -352,6 +352,8 @@ demangled_short   = Hash.new
 
 #Generate a shortened demangled name by removing the function arguments
 def shorten_symbol(sym_)
+    return sym_ if sym_ =~ /\$vtable\d+$/
+
     paren = 0
     finished = false
 

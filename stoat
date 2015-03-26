@@ -811,7 +811,7 @@ if options.graphfile
                                     (?: (?> [^<>]+ ) | \g<args>)*
                                  > ) /x, '<>')
                 # remove return type
-                name = name.sub(/^(?!operator).* /, '')
+                name = name.sub(/^(?!operator).* (?=[^<])/, '')
                 # remove leading namespaces (keep the last two components of the name)
                 name = name.sub(/(\w+(<>)?::)*(\w+(<>)?::)/, '\3')
                 # insert line breaks

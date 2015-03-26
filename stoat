@@ -357,7 +357,7 @@ demangled_symbols = Hash.new
 demangled_short   = Hash.new
 
 #Generate a shortened demangled name by removing the function arguments
-def shorten_symbol(sym_)
+def remove_arguments(sym_)
     return sym_ if sym_ =~ /\$vtable\d+$/
 
     paren = 0
@@ -381,6 +381,24 @@ def shorten_symbol(sym_)
     sym.reverse
 end
 
+def shorten_name(name)
+    # replace template arguments
+    name = name.gsub(/ (?<args> <
+                        (?: (?> [^<>]+ ) | \g<args>)*
+                     > ) /x, '<>')
+    # remove return type
+    name = name.sub(/^(?!operator).* (?=[^<])/, '')
+    # remove leading namespaces (keep the last two components of the name)
+    name = name.sub(/(\w+(<>)?::)*(\w+(<>)?::)/, '\3')
+    # insert line breaks
+    if(name =~ /^_Z\w{20,}_$/)
+        name = name.chars.each_slice(20).map(&:join).join("\n")
+    else
+        name = name.gsub('::', "::\n")
+    end
+    name
+end
+
 #Translate from mangled symbols into a list of demangled items
 def demangle(symbol_list, demangled_symbols, demangled_short, rtosc)
     $stderr.puts "Demangling #{symbol_list.length} Symbols..."
@@ -397,7 +415,7 @@ def demangle(symbol_list, demangled_symbols, demangled_short, rtosc)
     end
 
     demangled_symbols.each do |key, value|
-        m = shorten_symbol(value)
+        m = remove_arguments(value)
         if(m.empty?)
             demangled_short[key] = value
         else
@@ -806,20 +824,7 @@ if options.graphfile
         if(demangled_short.include?(key) && demangled_short[key] && demangled_short[key].length != 0 && important_nodes.include?(key))
             name = demangled_short[key]
             if(options.shorten)
-                # replace template arguments
-                name = name.gsub(/ (?<args> <
-                                    (?: (?> [^<>]+ ) | \g<args>)*
-                                 > ) /x, '<>')
-                # remove return type
-                name = name.sub(/^(?!operator).* (?=[^<])/, '')
-                # remove leading namespaces (keep the last two components of the name)
-                name = name.sub(/(\w+(<>)?::)*(\w+(<>)?::)/, '\3')
-                # insert line breaks
-                if(name =~ /^_Z\w{20,}_$/)
-                    name = name.chars.each_slice(20).map(&:join).join("\n")
-                else
-                    name = name.gsub('::', "::\n")
-                end
+                name = shorten_name(name)
             end
             node_list[key] = g.add_nodes(name, "color"=> val, :shape=>:box)
         end

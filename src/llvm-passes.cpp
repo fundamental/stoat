@@ -667,7 +667,16 @@ struct ExtractRtosc : public FunctionPass {
     bool runOnFunction(Function &Fn) override {
         //TODO check for the existance of an __cxx_global_var_init$N for an
         //arbitrary N
-        if(!(Fn.getName() == "__cxx_global_var_init" || Fn.getName() == "__cxx_global_var_init1"))
+        if(!(Fn.getName() == "__cxx_global_var_init"
+                    || Fn.getName() == "__cxx_global_var_init1"
+                    || Fn.getName() == "__cxx_global_var_init2"
+                    || Fn.getName() == "__cxx_global_var_init3"
+                    || Fn.getName() == "__cxx_global_var_init4"
+                    || Fn.getName() == "__cxx_global_var_init5"
+                    || Fn.getName() == "__cxx_global_var_init6"
+                    || Fn.getName() == "__cxx_global_var_init7"
+                    || Fn.getName() == "__cxx_global_var_init8"
+                    || Fn.getName() == "__cxx_global_var_init9"))
             return false;
 
         int state = NONE;

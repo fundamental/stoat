@@ -494,13 +494,16 @@ function_props.each do |key, value|
 end
 
 #Add Rtosc information
-puts "Unsafe functions: "
+#puts "Unsafe functions: "
 rtosc_information.each do |x|
+    #puts "Rtosc info #{x["func"]}"
     if(property_list.include?(x["func"]) &&
        !(x["meta"].include?("non-realtime")))
+        puts "Rtosc NON  info #{x["func"]}"
         property_list[x["func"]].realtime_p = true
         property_list[x["func"]].reason     = :reason_rtosc_w
     elsif(property_list.include?(x["func"]))
+        puts "Rtosc REAL info #{x["func"]}"
         property_list[x["func"]].realtime_p = false
         property_list[x["func"]].reason     = :reason_rtosc_b
     end
@@ -626,10 +629,12 @@ end
 suppression_list.each do |x|
     call = remangle(x[0], demangled_short)
     callee = remangle(x[1], demangled_short)
-    puts "Trying to kill off #{call}->#{callee}"
+    if(callee)
+        puts "Trying to kill off #{call}->#{callee}"
 
-    if(callgraph.include?(call))
-        callgraph[call].delete(callee)
+        if(callgraph.include?(call))
+            callgraph[call].delete_if {|y| Regexp.new(callee).match y }
+        end
     end
 
     call = x[0]
@@ -637,7 +642,7 @@ suppression_list.each do |x|
     puts "Trying to kill off #{call}->#{callee}"
 
     if(callgraph.include?(call))
-        callgraph[call].delete(callee)
+        callgraph[call].delete_if {|y| Regexp.new(callee).match y }
     end
 end
 

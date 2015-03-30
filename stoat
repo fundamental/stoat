@@ -24,7 +24,7 @@ require 'set'
 require 'yaml'
 require 'pp'
 require 'csv'
-require 'ruby-prof'
+#require 'ruby-prof'
 #RubyProf.start
 
 CurrentDir = File.dirname(__FILE__)

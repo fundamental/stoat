@@ -28,6 +28,11 @@ install(PROGRAMS ${CMAKE_SOURCE_DIR}/stoat
                  ${CMAKE_SOURCE_DIR}/stoat-compile
                  ${CMAKE_SOURCE_DIR}/stoat-compile++
     DESTINATION bin)
+install(PROGRAMS ${CMAKE_SOURCE_DIR}/lib/callgraph.rb
+                 ${CMAKE_SOURCE_DIR}/lib/deductions.rb
+                 ${CMAKE_SOURCE_DIR}/lib/graph.rb
+                 ${CMAKE_SOURCE_DIR}/lib/load-callgraph.rb
+    DESTINATION share/stoat)
 install(FILES ${CMAKE_SOURCE_DIR}/data/whitelist.txt
               ${CMAKE_SOURCE_DIR}/data/blacklist.txt DESTINATION share/stoat)
 install(SCRIPT cmake/InstallScript.cmake)

@@ -24,34 +24,32 @@ require 'set'
 require 'yaml'
 require 'pp'
 require 'csv'
-
-#Modifies mapa s.t. it includes the mapb info
-def merge_maps(mapa, mapb)
-    if mapb
-        mapb.each do |key, val|
-            if(key == 82 || key == "82" || val==82 || val=="82")
-                exit(1)
-            end
-            if(mapa.has_key?(key) && mapa[key].is_a?(Array))
-                mapa[key].concat val
-            elsif(mapa.has_key?(key))
-                #puts "Hey Look At Me..."
-                #puts "key = #{key}"
-                #puts "old = #{mapa[key]}"
-                #puts "val = #{val}"
-                mapa[key] = val
-            else
-                mapa[key] = val
-            end
-        end
-    end
-end
+require 'ruby-prof'
+#RubyProf.start
 
 CurrentDir = File.dirname(__FILE__)
 
+#Load Dependencies
+def load_dep(x)
+    load "#{CurrentDir}/lib/#{x}"
+rescue LoadError
+    load "#{CurrentDir}/../share/stoat/#{x}"
+end
+
+load_dep "callgraph.rb"
+load_dep "deductions.rb"
+load_dep "graph.rb"
+load_dep "load-callgraph.rb"
+
+################################################################################
+#                            Parse Options                                     #
+################################################################################
+
 options = OpenStruct.new
-options.whitelist = [CurrentDir+"/data/whitelist.txt", CurrentDir+"/../share/stoat/whitelist.txt"]
-options.blacklist = [CurrentDir+"/data/blacklist.txt", CurrentDir+"/../share/stoat/blacklist.txt"]
+options.whitelist = [CurrentDir+"/data/whitelist.txt",
+                     CurrentDir+"/../share/stoat/whitelist.txt"]
+options.blacklist = [CurrentDir+"/data/blacklist.txt",
+                     CurrentDir+"/../share/stoat/blacklist.txt"]
 options.suppression = []
 options.unmangled = OpenStruct.new
 options.unmangled.whitelist = []
@@ -122,6 +120,9 @@ OptionParser.new do |opts|
       end
 end.parse!
 
+################################################################################
+#                        Load Optional Dependencies                            #
+################################################################################
 if(options.graphfile)
     require 'graphviz'
 end
@@ -129,7 +130,6 @@ end
 if(options.colorize)
     require 'colorize'
 else
-    #String.disable_colorization = true
     class String
         def bold
             self
@@ -139,6 +139,10 @@ else
         end
     end
 end
+
+################################################################################
+#                            Load Data Files                                   #
+################################################################################
 
 def read_file(file)
     return File.read(file).split("\n") \
@@ -155,7 +159,7 @@ options.whitelist.each do |x|
         white_list.concat read_file(x).flatten(1)
     rescue Errno::ENOENT => err
         if(tmp > 2) #Non default
-            $stderr.puts("Unknown whitelist file #{x}")
+            $stderr.puts("Warning: Unknown whitelist file '#{x}'".colorize(:yellow))
         end
     end
 end
@@ -168,7 +172,7 @@ options.blacklist.each do |x|
         black_list.concat read_file(x).flatten(1)
     rescue Errno::ENOENT => err
         if(tmp > 2) #Non default
-            $stderr.puts "Unknown blacklist file #{x}"
+            $stderr.puts("Warning: Unknown blacklist file '#{x}'".colorize(:yellow))
         end
     end
 end
@@ -180,7 +184,7 @@ begin
         begin
             tlist.concat read_file(x)
         rescue Errno::ENOENT => err
-            $stderr.puts "Unknown suppression file #{x}"
+            $stderr.puts("Warning: Unknown suppression file '#{x}'".colorize(:yellow))
         end
     end
     tlist.each do |x|
@@ -188,16 +192,15 @@ begin
             tmp = x[0], x[2]
             suppression_list << tmp
         else
-            puts "Possible formatting error in suppression file"
+            $stderr.puts("Error: Possible formatting error in suppression file".colorize(:red))
         end
     end
 end
 
 
-#If there are unmangled files, then mangle them and add them to the end of the
-#mangled lists
-
-#For each one of the bitcode files, run the pass based preprocessor
+################################################################################
+#                      Get Parameters For LLVM Passes                          #
+################################################################################
 files = []
 if(!ARGV.empty?)
     files.concat ARGV
@@ -215,17 +218,11 @@ if(options.recursive)
 end
 
 if(files.empty?)
-    $stderr.puts "There Are No Files To Process"
+    $stderr.puts("Error: There Are No Files To Process".colorize(:red))
     exit 1
 end
 
-#p files
-callgraph = Hash.new
-function_props = Hash.new
-class_high = Hash.new
-vtable_information = Hash.new
-rtosc_information = Array.new
-
+#Identify opt binary name
 opt = nil
 ["opt-3.3", "opt-3.4", "opt-3.5", "opt"].each do|x|
     if(!`which #{x} 2> /dev/null`.empty?)
@@ -234,624 +231,89 @@ opt = nil
 end
 
 if(!opt)
-    $stderr.puts "Could Not Find A Usable Opt"
+    $stderr.puts("Error: Could not find a usable version of 'opt'".colorize(:red))
     exit 1
 end
 
 library_test = `#{opt} -load #{options.lib} < #{__FILE__} 2>&1`
 if(/Error opening/.match library_test)
-    $stderr.puts "Could Not Find A Usable libstoat.so"
+    $stderr.puts("Error: Could not find a usable libstoat.so".colorize(:red))
     exit 1
 end
 
+################################################################################
+#                           Initialize Callgraph                               #
+################################################################################
 
-#Gather All Information from bitcode files
-files.each do |f|
-    $stderr.puts "Parsing '#{f}'..."
-
-    cg = Thread.new {
-        `#{opt} -load #{options.lib} --extract-callgraph < #{f} > /dev/null 2> stoat_callgraph.txt`
-    }
-    an = Thread.new {
-        `#{opt} -load #{options.lib} --extract-annotations < #{f} > /dev/null 2> stoat_annotations.txt`
-    }
-    ch = Thread.new {
-        `#{opt} -load #{options.lib} --extract-class-hierarchy < #{f} > /dev/null 2> stoat_class.txt`
-    }
-    vt = Thread.new {
-        `#{opt} -load #{options.lib} --extract-vtables < #{f} > /dev/null 2> stoat_vtable.txt`
-    }
-    rt = Thread.new {
-        `#{opt} -load #{options.lib} --extract-rtosc < #{f} > /dev/null 2> stoat_rtosc.txt`
-    }
-    cg.join
-    an.join
-    ch.join
-    vt.join
-    rt.join
-    ncallgraph          = YAML.load_file "stoat_callgraph.txt"
-    nfunc               = YAML.load_file "stoat_annotations.txt"
-    class_nhigh         = YAML.load_file "stoat_class.txt"
-    vtable_ninformation = YAML.load_file "stoat_vtable.txt"
-    rtosc_ninformation  = YAML.load_file "stoat_rtosc.txt"
-
-    merge_maps(callgraph, ncallgraph)
-    merge_maps(function_props, nfunc)
-    merge_maps(class_high, class_nhigh)
-    merge_maps(vtable_information, vtable_ninformation)
-    if(rtosc_ninformation)
-        rtosc_information.concat rtosc_ninformation
-    end
-end
-
-`rm stoat_callgraph.txt`
-`rm stoat_annotations.txt`
-`rm stoat_class.txt`
-`rm stoat_vtable.txt`
-`rm stoat_rtosc.txt`
-
-#puts "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-#pp class_high
-#puts "___________---___________________________----------__________--------__________-----"
-#Rewrite class information based upon inverting template renaming
-alias_map = Hash.new
-class_high.each do |key, val|
-    val.each do |x|
-        if(/^alias/.match x)
-            #puts "alias '#{key}'->'#{x[6,x.length]}'"
-            alias_map[x[6,x.length]] = key
-        end
-    end
-    val.delete_if { |x| /^alias/.match x }
-end
-
-#pp alias_map
-
-class_high.each do |key, val|
-    replace = []
-    val.each do |x|
-        if(alias_map.has_key?(x))
-            replace << alias_map[x]
-        else
-            replace << x
-        end
-    end
-    class_high[key] = val
-end
-
-callgraph.each do |parent, children|
-    replace = []
-    children.each do |child|
-        parts = child.split '$'
-        if(parts.length == 2)
-            if(alias_map.has_key?(parts[0]))
-                parts[0] = alias_map[parts[0]]
-            end
-            if((/^class/.match parts.join("$")) ||
-               (/^struct/.match parts.join("$")))
-                replace << parts.join("$")
-            else
-                replace << parts.join("$")
-            end
-        else
-            replace << child
-        end
-    end
-    callgraph[parent] = replace
-end
-
-
-
-#Identify all symbols that are observed in the callgraph
-symbol_list = Set.new
-callgraph.each do |key,val|
-    symbol_list << key
-    val.each do |x|
-        symbol_list << x
-    end
-    val = val.uniq
-end
-
-$stderr.puts "Demangling #{symbol_list.length} Symbols..."
-demangled_symbols = Hash.new
-demangled_short   = Hash.new
-
-#Generate a shortened demangled name by removing the function arguments
-def remove_arguments(sym_)
-    return sym_ if sym_ =~ /\$vtable\d+$/
-
-    paren = 0
-    finished = false
-
-    sym = ""
-    sym_.reverse.each_char do |x|
-        if finished
-            sym << x
-        end
-        if x == ')'
-            paren = paren + 1
-        end
-
-        if(x == '(' && paren == 1)
-            finished = 1
-        elsif(x == '(')
-            paren = paren - 1
-        end
-    end
-    sym.reverse
-end
-
-def shorten_name(name)
-    # replace template arguments
-    name = name.gsub(/ (?<args> <
-                        (?: (?> [^<>]+ ) | \g<args>)*
-                     > ) /x, '<>')
-    # remove return type
-    name = name.sub(/^(?!operator).* (?=[^<])/, '')
-    # remove leading namespaces (keep the last two components of the name)
-    name = name.sub(/(\w+(<>)?::)*(\w+(<>)?::)/, '\3')
-    # insert line breaks
-    if(name =~ /^_Z\w{20,}_$/)
-        name = name.chars.each_slice(20).map(&:join).join("\n")
-    else
-        name = name.gsub('::', "::\n")
-    end
-    name
-end
-
-#Translate from mangled symbols into a list of demangled items
-def demangle(symbol_list, demangled_symbols, demangled_short, rtosc)
-    $stderr.puts "Demangling #{symbol_list.length} Symbols..."
-    f = File.new("stoat_tmp.txt", "w")
-    f.write(symbol_list.to_a.join("\n"))
-    f.close
-    demangled_list = `cat stoat_tmp.txt | c++filt`.split("\n")
-    `rm stoat_tmp.txt`
-    $stderr.puts "Resulting in #{demangled_list.length} Items..."
-    tmp = 0
-    symbol_list.each do |x|
-        demangled_symbols[x] = demangled_list[tmp]
-        tmp = tmp + 1
-    end
-
-    demangled_symbols.each do |key, value|
-        m = remove_arguments(value)
-        if(m.empty?)
-            demangled_short[key] = value
-        else
-            demangled_short[key] = m
-        end
-    end
-    #Use Rtosc Symbols to get a better demangling
-    rtosc.each do |x|
-        key = x["func"]
-        val = x["name"]
-        if(demangled_short.include?(key))
-            demangled_short[key] = val
-        end
-    end
-end
-demangle(symbol_list, demangled_symbols, demangled_short, rtosc_information)
-
-#pp demangled_short
-
-
-reasons = {
-    reason_user_w:  ["Realtime (Whitelist)", :green],
-    reason_user_b:  ["NonRealtime (Blacklist)", :red],
-    reason_code_w:  ["Realtime (Annotation)", :green],
-    reason_code_b:  ["NonRealtime (Annotation)", :red],
-    reason_rtosc_w: ["Rtosc Safe", :green],
-    reason_rtosc_b: ["Rtosc Unsafe", :red],
-    reason_deduced: ["Deduced Realtime", :yellow],
-    reason_none:    ["No Deduction has occured", :default],
-    reason_nocode:  ["Assumed Unsafe", :red],
-}
-
-class DeductionChain
-    attr_accessor :deduction_source, :reason, :realtime_p, :non_realtime_p, :has_body_p, :contradicted_p, :contradicted_by
-
-
-    def initialize
-        @deduction_source = nil
-        @reason           = :reason_none
-        @realtime_p       = false
-        @non_realtime_p   = false
-        @has_body_p       = false
-        @contradicted_p   = false
-        @contradicted_by  = Set.new
-    end
-end
-
-property_list = Hash.new
-symbol_list.each do |x|
-    property_list[x] = DeductionChain.new
-end
-
-$stderr.puts "Doing Property List Stuff"
-
-#Add information about finding source
-callgraph2 = Hash.new
-callgraph.each do |key,value|
-    property_list[key].has_body_p = true
-    if(!value.include? "nil")
-        callgraph2[key] = value.uniq
-    end
-end
-callgraph = callgraph2
+(callgraph, classes, vtable, rtosc) = load_callgraph(opt, options.lib, files)
 
 #Add Anything That's On the function_props list
-function_props.each do |key, value|
-    if(property_list.include? key)
-        if(value.include? 'realtime')
-            property_list[key].realtime_p = true
-            property_list[key].reason     = :reason_code_w
-        elsif(value.include? 'non-realtime')
-            property_list[key].non_realtime_p = true
-            property_list[key].reason         = :reason_code_b
-        end
-    end
-end
+Deductions::add_attr_safety(callgraph)
 
 #Add Rtosc information
-#puts "Unsafe functions: "
-rtosc_information.each do |x|
-    #puts "Rtosc info #{x["func"]}"
-    if(property_list.include?(x["func"]) &&
-       !(x["meta"].include?("non-realtime")))
-        puts "Rtosc NON  info #{x["func"]}"
-        property_list[x["func"]].realtime_p = true
-        property_list[x["func"]].reason     = :reason_rtosc_w
-    elsif(property_list.include?(x["func"]))
-        puts "Rtosc REAL info #{x["func"]}"
-        property_list[x["func"]].realtime_p = false
-        property_list[x["func"]].reason     = :reason_rtosc_b
-    end
-end
-
-#Add WhiteList Information
-whitelist_wild = Array.new
-white_list.each do |x|
-    if(x.include? "*")
-        whitelist_wild.push(Regexp.new(x))
-    end
-end
-
-def wild_match(wild_list, str)
-    wild_list.each do |x|
-        if(x.match(str))
-            return true
-        end
-    end
-    return false
-end
-
-
-property_list.each do |key, value|
-    if(!value.realtime_p &&
-       !value.non_realtime_p)
-        if(white_list.include?(key) || white_list.include?(demangled_short[key]) || wild_match(whitelist_wild, demangled_short[key]))
-            value.realtime_p = true
-            value.reason = :reason_user_w
-        end
-    end
-end
-
-#Add BlackList Information
-property_list.each do |key, value|
-    if(!value.realtime_p &&
-       !value.non_realtime_p)
-        if(black_list.include?(key) || black_list.include?(demangled_short[key]))
-            value.non_realtime_p = true
-            value.reason = :reason_user_b
-        end
-    end
-end
+Deductions::add_rtosc_safety(callgraph, rtosc)
 
 #Add Any Known Virtual Calls
-vtable_information.each do |key, value|
-    value.each do |key2, value2|
-        if(value2 != "(none)" && value2 != "__cxa_pure_virtual")
-            new_key = "#{key}$vtable#{key2}"
-            #puts "Forming a new link #{new_key} => #{value2}"
-            if(!callgraph.include? new_key)
-                callgraph[new_key] = []
-            end
-            callgraph[new_key] << value2
-            if(!property_list.include? new_key)
-                property_list[new_key] = DeductionChain.new
-                symbol_list << new_key
-            end
-            if(!property_list.include? value2)
-                property_list[value2] = DeductionChain.new
-                symbol_list << value2
-            end
-            property_list[new_key].has_body_p = true
-        end
-    end
-end
+callgraph.add_virtual_methods vtable
 
 #Add Calls Down the hierarchy
-class_high.each do |sub, supers|
-    supers.each do |super_|
-        50.times do |x|
-            testing = "#{super_}$vtable#{x}"
-            source = "#{sub}$vtable#{x}"
-            #puts testing
-            #puts source
-            if(symbol_list.include? testing)
-                callgraph[testing] ||= []
-                callgraph[testing] << source
-                symbol_list << source
-                if(!property_list.include? source)
-                    property_list[source] = DeductionChain.new
-                    property_list[source].has_body_p = true
-                end
-                property_list[testing].has_body_p = true
-            end
-        end
-    end
-end
+callgraph.add_subclass_calls classes
 
 #Add C++ABI Destructor/Constructor Chaining
-symbol_list.each do |sym_|
-    sym = sym_.to_s #TODO figure out how an integer got in this list
-    if /D1Ev$/.match sym
-        sym_mod = sym.gsub(/D1Ev$/, "D2Ev")
-        if(symbol_list.include?(sym_mod) && !callgraph.include?(sym))
-            callgraph[sym] = [sym_mod]
-            property_list[sym].has_body_p = true
-        end
-    end
-end
+callgraph.add_constructor_chains
+callgraph.add_destructor_chains
 
-symbol_list.each do |sym_|
-    sym = sym_.to_s
-    if /C1E/.match sym
-        sym_mod = sym.gsub(/C1E/, "C2E")
-        if(symbol_list.include?(sym_mod) && !callgraph.include?(sym))
-            callgraph[sym] = [sym_mod]
-            property_list[sym].has_body_p = true
-        end
-    end
-end
+#Rebuild Demangled Name Cache
+callgraph.update_demangled_cache rtosc
+
+################################################################################
+#                              Apply Datafiles                                 #
+################################################################################
+
+#Add WhiteList Information
+callgraph.apply_whitelist white_list
+
+#Add BlackList Information
+callgraph.apply_blacklist black_list
 
 #Suppress any bit of the callgraph which is noted in the suppression file
-def remangle(x, demangled_short)
-    demangled_short.each do |a,b|
-        if(b == x)
-            return a
-        end
-    end
-    nil
-end
+callgraph.apply_suppression suppression_list
 
-suppression_list.each do |x|
-    call = remangle(x[0], demangled_short)
-    callee = remangle(x[1], demangled_short)
-    if(callee)
-        puts "Trying to kill off #{call}->#{callee}"
+#Add no source stuff
+Deductions::add_no_body_safety callgraph
 
-        if(callgraph.include?(call))
-            callgraph[call].delete_if {|y| Regexp.new(callee).match y }
-        end
-    end
+#puts callgraph.full_to_s
 
-    call = x[0]
-    callee = x[1]
-    puts "Trying to kill off #{call}->#{callee}"
-
-    if(callgraph.include?(call))
-        callgraph[call].delete_if {|y| Regexp.new(callee).match y }
-    end
-end
-
+################################################################################
+#                              Save Datafiles                                  #
+################################################################################
 
 #Dump Known information to a file
 if(options.dump_file)
-    f = File.open(options.dump_file, 'w+')
-    map = Hash.new
-    map["callgraph"] = callgraph
-    map["whitelist"] = Hash.new
-    map["blacklist"] = Hash.new
-    map["has_code"]  = Set.new
-    property_list.each do |key, val|
-        if(val.realtime_p)
-            map["whitelist"][key] = reasons[val.reason][0]
-        end
-        if(val.non_realtime_p)
-            map["blacklist"][key] = reasons[val.reason][0]
-        end
-        if(val.has_body_p)
-            map["has_code"] << key
-        end
-    end
-
-    f.puts YAML.dump map
-    f.close
+    callgraph.save_to options.dump_file
 end
 
+################################################################################
+#                             Perform Deductions                               #
+################################################################################
 
-#Add no source stuff
-property_list.each do |key, value|
-    if(!value.has_body_p && !value.realtime_p && !value.non_realtime_p)
-        value.non_realtime_p = true
-        value.reason         = :reason_nocode
-    end
-end
+deductions = Deductions::setup(callgraph)
+Deductions::deduce_safe(deductions, callgraph)
+error_count = Deductions::dump_errors(deductions, callgraph)
 
-#Perform Deductions
-do_stuff = true
-while do_stuff
-    do_stuff = false
-    property_list.each do |key, value|
-        if(!value.contradicted_p)
-            if(value.realtime_p() && callgraph.include?(key))
-                callgraph[key].each do |x|
-                    if(property_list[x].non_realtime_p)
-                        value.contradicted_p = true
-                        value.contradicted_by << x
-                        do_stuff = true
-                    elsif(!property_list[x].realtime_p)
-                        property_list[x].realtime_p = true
-                        property_list[x].deduction_source = key
-                        property_list[x].reason = :reason_deduced
-                        do_stuff = true
-                    end
-                end
-            end
-        end
-    end
-end
-
-
-
-#Regenerate Demangled Symbols
-demangled_symbols = Hash.new
-demangled_short   = Hash.new
-demangle(symbol_list, demangled_symbols, demangled_short, rtosc_information)
-
-puts "\n\n"
-
-error_count = 0
-property_list.each do |key, value|
-    if(value.contradicted_p)
-        error_count = error_count+1
-        puts "Error ##{error_count}:"
-        puts demangled_symbols[key].bold
-        pp value
-        puts "##The Deduction Chain:".bold
-        next_prop = value.deduction_source
-        while(next_prop) do
-            string, color = reasons[property_list[next_prop].reason]
-            puts " - #{demangled_symbols[next_prop]} : #{string.colorize(color)}"
-            next_prop = property_list[next_prop].deduction_source
-        end
-        puts "##The Contradiction Reasons:".bold
-        value.contradicted_by.each do |x|
-            string, color = reasons[property_list[x].reason]
-            puts " - #{demangled_symbols[x]} : #{string.colorize(color)}"
-        end
-        puts "\n\n"
-    end
-end
-
-puts "Total of #{error_count} error(s)"
-
-
-def to_2hex(x)
-    s = x.to_s 16
-    if(s.length == 1)
-        "0" + s
-    else
-        s
-    end
-end
-
-def random_color
-    r = (rand * 255 * 255).to_i % ("CE".to_i 16)
-    g = (rand * 255 * 255).to_i % ("DD".to_i 16)
-    b = (rand * 255 * 255).to_i % ("EC".to_i 16)
-    "#" + ([r,g,b].map{|x| to_2hex(x)}.join)
-end
-
-def transitive_closure(demangle, map, val, known = [])
-    if(known.include?(val))
-        return Set.new([])
-    end
-    result = Set.new(map[val])
-    result << val
-    result2 = Set.new
-    result.map do |x|
-        if(!known.include?(x) && !result2.include?(x))
-            result2 = result2.union transitive_closure(demangle, map, x, result2.union([val]).union(known))
-        end
-    end
-    #puts "#{demangle[val]} ==> [#{result2.map{|x| demangle[x]}}]"
-    result2.union result
-end
+################################################################################
+#                               Save Graph                                     #
+################################################################################
 
 if options.graphfile
-    g = GraphViz::new( "G" )
-    important_nodes = Set.new
-    color_nodes     = Hash.new
-    property_list.each do |key,val|
-        if(val.contradicted_p)
-            color_nodes[key] ||= "red"
-            val.contradicted_by.each do |x|
-                color_nodes[x] = "black"
-            end
-        elsif(val.realtime_p && val.has_body_p)
-            color_nodes[key] ||= "green"
-            if(callgraph.include? key)
-                callgraph[key].each do |x|
-                    if(property_list.include?(x) && property_list[x].realtime_p && !property_list[x].contradicted_p)
-                        color_nodes[x] = "green"
-                    end
-                end
-            end
-        end
-    end
-
-    #For a minimal graph *only* include the realtime functions that eventually
-    #call a non-realtime or ambigious function
-    if(options.minimal_graph)
-        #Invert callgraph for fast graph reduction
-        inverse_callgraph = Hash.new
-        callgraph.each do |key, value|
-            value.each do |dest|
-                if(inverse_callgraph.has_key?(dest))
-                    inverse_callgraph[dest] << key
-                else
-                    inverse_callgraph[dest] = Set.new([key])
-                end
-            end
-        end
-        inverse_callgraph.each do |key,value|
-            inverse_callgraph[key] = value.to_a
-        end
-
-        important_nodes = Set.new
-
-        color_nodes.each do |call,color|
-            if(color == "black")
-                important_nodes = important_nodes.union(transitive_closure(demangled_symbols, inverse_callgraph, call, important_nodes))
-            end
-        end
-    else
-        important_nodes = color_nodes.keys
-    end
-
-
-
-    node_list = Hash.new
-    color_nodes.each do |key,val|
-        if(demangled_short.include?(key) && demangled_short[key] && demangled_short[key].length != 0 && important_nodes.include?(key))
-            name = demangled_short[key]
-            if(options.shorten)
-                name = shorten_name(name)
-            end
-            node_list[key] = g.add_nodes(name, "color"=> val, :shape=>:box)
-        end
-    end
-
-    callgraph.each do |src, dests|
-        dests.uniq.each do |dest|
-            if(node_list.include?(src) && node_list.include?(dest))
-                if(property_list[dest].non_realtime_p)
-                    g.add_edges(node_list[src], node_list[dest], "color"=>(random_color), "style"=>"bold")
-                else
-                    g.add_edges(node_list[src], node_list[dest], "color"=>(random_color), "style"=>"dashed")
-                end
-            end
-        end
-    end
-    g.output( :png => options.graphfile)
+    GraphRender::to_graph(deductions, callgraph, options.graphfile,
+                          options.minimal_graph, options.shorten)
 end
 puts "return code is '#{(error_count != 0) ? -1 : 0}'"
 
-if(error_count == 0)
-    exit 0
-else
-    exit(-1)
-end
+#result = RubyProf.stop
+#printer = RubyProf::GraphPrinter.new(result)
+#printer.print(STDOUT, {})
+
+exit(-1) unless error_count == 0
+

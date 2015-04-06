@@ -141,6 +141,7 @@ __dynamic_cast
 _ZSt9terminatev
 
 rand
+scalbnf
 
 # hacks here
 struct.rtosc::RtData0

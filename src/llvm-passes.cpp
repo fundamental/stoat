@@ -374,6 +374,7 @@ struct ExtractClassHierarchy : public FunctionPass {
 
     string extractSuperClass(Instruction *this_ptr, BitCastInst *possible)
     {
+        //Single Inheritance
         if(auto load = dyn_cast<LoadInst>(possible->getOperand(0))) {
             if(this_ptr == dyn_cast<Instruction>(load->getOperand(0))) {
                 std::string data_str;
@@ -391,6 +392,29 @@ struct ExtractClassHierarchy : public FunctionPass {
                     return s.substr(9, l-11);
             }
         }
+
+        if(auto getelm = dyn_cast<GetElementPtrInst>(possible->getOperand(0))) {
+            if(auto cast = dyn_cast<BitCastInst>(getelm->getOperand(0))) {
+                if(auto load = dyn_cast<LoadInst>(cast->getOperand(0))) {
+                    if(this_ptr == dyn_cast<Instruction>(load->getOperand(0))) {
+                        std::string data_str;
+                        llvm::raw_string_ostream ss(data_str);
+                        possible->getDestTy()->getScalarType()->getScalarType()->print(ss);
+                        std::string s = ss.str();
+                        int l = s.length();
+                        if(s.substr(0,6) == "%class")
+                            return s.substr(7, l-8);
+                        if(s.substr(0,7) == "%\"class")
+                            return s.substr(8, l-10);
+                        if(s.substr(0,7) == "%struct")
+                            return ss.str().substr(8, l-9);
+                        if(s.substr(0,8) == "%\"struct")
+                            return s.substr(9, l-11);
+                    }
+                }
+            }
+        }
+
         return "";
     }
 
@@ -478,7 +502,8 @@ struct ExtractClassHierarchy : public FunctionPass {
         //fprintf(stderr, "realname='%s'\n", realname);
         if(realname) {
             string fullname = getFullName(realname);
-            //printf("fullname='%s'\n", fullname.c_str());
+            //fprintf(stderr, "truename='%s'\n", Fn.getName().str().c_str());
+            //fprintf(stderr, "fullname='%s'\n", fullname.c_str());
             if(isConstructorp(fullname.c_str())) {
                 //fprintf(stderr, "It's a constructor\n");
                 findSuperClasses(Fn, getMethodName(realname), fullname);

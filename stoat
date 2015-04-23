@@ -257,7 +257,7 @@ Deductions::add_rtosc_safety(callgraph, rtosc)
 callgraph.add_virtual_methods vtable
 
 #Add Calls Down the hierarchy
-callgraph.add_subclass_calls classes
+callgraph.add_subclass_calls(classes,vtable)
 
 #Add C++ABI Destructor/Constructor Chaining
 callgraph.add_constructor_chains
@@ -290,7 +290,7 @@ Deductions::add_no_body_safety callgraph
 
 #Dump Known information to a file
 if(options.dump_file)
-    callgraph.save_to options.dump_file
+    puts callgraph.full_to_s
 end
 
 ################################################################################

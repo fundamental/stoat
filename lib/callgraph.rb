@@ -232,7 +232,8 @@ class Callgraph
     def add_virtual_methods(vtables)
         vtables.each do |cs, value|
             value.each do |id, method|
-                virtual_method = "#{cs}$vtable#{id}"
+                css = cs.gsub(/.variant.$/,"")
+                virtual_method = "#{css}$vtable#{id}"
                 declare virtual_method
                 if(method != "(none)" && method != "__cxa_pure_virtual")
                     declare method
@@ -248,19 +249,35 @@ class Callgraph
     end
 
     # Add Plausible Virtual Method Calls Down the Class Hierarchy
-    def add_subclass_calls(classes)
+    def add_subclass_calls(classes, vtables)
         classes.each do |sub, supers|
+            iter  = 0
+            vtoff = 0
             supers.each do |super_|
-                50.times do |x|
-                    testing = "#{super_}$vtable#{x}"
-                    source = "#{sub}$vtable#{x}"
-                    if(has_method?(testing) || has_method?(source))
-                        declare testing
-                        declare source
-                        strict_link(testing,source)
-                        self[testing].add_attr :body
-                        self[source].add_attr :body
+                vt = nil
+                if(iter == 0)
+                    if(vtables.has_key?(sub))
+                        vt = vtables[sub]
                     end
+                else
+                    if(vtables.has_key?(sub+".variant"+iter.to_s))
+                        vt = vtables[sub+".variant"+iter.to_s]
+                    end
+                end
+                if(vt)
+                    vt.length.times do |x|
+                        testing = "#{super_}$vtable#{x}"
+                        source = "#{sub}$vtable#{x+vtoff}"
+                        if(has_method?(testing) || has_method?(source))
+                            declare testing
+                            declare source
+                            strict_link(testing,source)
+                            self[testing].add_attr :body
+                            self[source].add_attr :body
+                        end
+                    end
+                    vtoff += vt.length
+                    iter += 1
                 end
             end
         end

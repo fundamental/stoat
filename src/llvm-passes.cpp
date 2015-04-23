@@ -532,9 +532,12 @@ struct ExtractVtables : public ModulePass {
         //Field 1 - Typeinfo
         //Field 2 - Offset 0 virtual method
         //Field N - Offset N-2 virtual method
+        //Field 0/1 repeat with multiple inheritance
         unsigned ops = v->getNumOperands();
         if(ops >= 2)
             fprintf(stderr, "%s:\n", name);
+        int variant = 0;
+        int ii = 0;
         for(unsigned i=2; i<ops; ++i)
         {
             auto op       = v->getOperand(i);
@@ -552,12 +555,19 @@ struct ExtractVtables : public ModulePass {
             }
             if(fname && strlen(fname) == 0)
                 fname = NULL;
+
+            if(!fname) {
+                fprintf(stderr, "%s.variant%d:\n", name, ++variant);
+                i++;
+                ii+=2;
+                continue;
+            }
             char *tmp = fname;
             while(tmp && *tmp && isprint(*tmp))
                 tmp++;
             if(tmp)
                 *tmp = 0;
-            fprintf(stderr, "    %d: %s\n", i-2, fname);
+            fprintf(stderr, "    %d: %s\n", i-2-ii, fname);
             free(fname);
         }
     }

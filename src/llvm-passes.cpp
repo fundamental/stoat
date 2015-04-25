@@ -372,7 +372,7 @@ struct ExtractClassHierarchy : public FunctionPass {
         return false;
     }
 
-    string extractSuperClass(Instruction *this_ptr, BitCastInst *possible)
+    string extractSuperClass(Instruction *this_ptr, BitCastInst *possible, bool &hasTrueClass)
     {
         //Single Inheritance
         if(auto load = dyn_cast<LoadInst>(possible->getOperand(0))) {
@@ -381,6 +381,10 @@ struct ExtractClassHierarchy : public FunctionPass {
                 llvm::raw_string_ostream ss(data_str);
                 possible->getDestTy()->getScalarType()->getScalarType()->print(ss);
                 std::string s = ss.str();
+                if(hasTrueClass)
+                    return "";
+                hasTrueClass = true;
+                //fprintf(stderr, "norm name = %s\n", s.c_str());
                 int l = s.length();
                 if(s.substr(0,6) == "%class")
                     return s.substr(7, l-8);
@@ -390,6 +394,7 @@ struct ExtractClassHierarchy : public FunctionPass {
                     return ss.str().substr(8, l-9);
                 if(s.substr(0,8) == "%\"struct")
                     return s.substr(9, l-11);
+                hasTrueClass = false;
             }
         }
 
@@ -397,19 +402,24 @@ struct ExtractClassHierarchy : public FunctionPass {
             if(auto cast = dyn_cast<BitCastInst>(getelm->getOperand(0))) {
                 if(auto load = dyn_cast<LoadInst>(cast->getOperand(0))) {
                     if(this_ptr == dyn_cast<Instruction>(load->getOperand(0))) {
+                        //getelm->dump();
+                        if(!dyn_cast<ConstantInt>(getelm->getOperand(1)))
+                            return "";
+                        unsigned off = dyn_cast<ConstantInt>(getelm->getOperand(1))->getZExtValue()/8;
                         std::string data_str;
                         llvm::raw_string_ostream ss(data_str);
                         possible->getDestTy()->getScalarType()->getScalarType()->print(ss);
                         std::string s = ss.str();
+                        //fprintf(stderr, "name = %s\n", s.c_str());
                         int l = s.length();
                         if(s.substr(0,6) == "%class")
-                            return s.substr(7, l-8);
+                            return s.substr(7, l-8)+"+"+to_s(off);
                         if(s.substr(0,7) == "%\"class")
-                            return s.substr(8, l-10);
+                            return s.substr(8, l-10)+"+"+to_s(off);
                         if(s.substr(0,7) == "%struct")
-                            return ss.str().substr(8, l-9);
+                            return ss.str().substr(8, l-9)+"+"+to_s(off);
                         if(s.substr(0,8) == "%\"struct")
-                            return s.substr(9, l-11);
+                            return s.substr(9, l-11)+"+"+to_s(off);
                     }
                 }
             }
@@ -438,6 +448,7 @@ struct ExtractClassHierarchy : public FunctionPass {
 
         std::vector<string> class_list;
         Instruction *this_ptr = NULL;
+        bool hasTrueClass = false;
         for(auto &bb:Fn) {
             for(auto &I:bb) {
                 if(!this_ptr && dyn_cast<AllocaInst>(&I))
@@ -445,7 +456,7 @@ struct ExtractClassHierarchy : public FunctionPass {
 
                 if(auto bitcast = dyn_cast<BitCastInst>(&I))
                 {
-                    auto super = extractSuperClass(this_ptr, bitcast);
+                    auto super = extractSuperClass(this_ptr, bitcast, hasTrueClass);
                     if(!super.empty())
                     {
                         bool not_already_here = true;
@@ -557,7 +568,10 @@ struct ExtractVtables : public ModulePass {
                 fname = NULL;
 
             if(!fname) {
-                fprintf(stderr, "%s.variant%d:\n", name, ++variant);
+                int variant_id = 0;
+                if(auto n = dyn_cast<ConstantInt>(op->getOperand(0)))
+                    variant_id = -n->getZExtValue()/8;
+                fprintf(stderr, "%s.variant%d:\n", name, variant_id);//++variant);
                 i++;
                 ii+=2;
                 continue;

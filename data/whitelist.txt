@@ -152,6 +152,11 @@ _ZSt9terminatev
 rand
 scalbnf
 
+strchr
+__log2_finite
+__divdc3
+__mulsc3
+
 # hacks here
 struct.rtosc::RtData0
 struct.rtosc::RtData1

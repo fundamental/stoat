@@ -88,6 +88,7 @@ module GraphRender
 
 
         puts "Generating Graph Nodes..."
+        argh      = Hash.new
         node_list = Hash.new
         important_nodes.each do |key|
             if(color_nodes.has_key?(key))
@@ -95,6 +96,7 @@ module GraphRender
                 name = callgraph.node_list[key].demangled_short
                 if(shorten)
                     name = shorten_name(name)
+                    argh[key] = name
                 end
                 node_list[key] = g.add_nodes(name, "color"=> val,
                                              :shape=>:box)
@@ -102,16 +104,23 @@ module GraphRender
         end
 
         puts "Generating Graph Links..."
+        dont_repeat = Hash.new
         important_nodes.each do |src|
             callgraph.children(src).each do |dest|
                 if(important_nodes.include?(dest) && node_list.has_key?(src) &&
                   node_list.has_key?(dest))
                     if(deductions[dest].non_realtime_p)
-                        g.add_edges(node_list[src], node_list[dest],
-                                    "color"=>(random_color), "style"=>"bold")
+                        #if(!dont_repeat.has_key?([argh[src],argh[dest]]))
+                            g.add_edges(node_list[src], node_list[dest],
+                                        "color"=>(random_color), "style"=>"bold")
+                            dont_repeat[[argh[src],argh[dest]]] = true
+                        #end
                     else
-                        g.add_edges(node_list[src], node_list[dest],
-                                    "color"=>(random_color), "style"=>"dashed")
+                        #if(!dont_repeat.has_key?([argh[src],argh[dest]]))
+                            g.add_edges(node_list[src], node_list[dest],
+                                        "color"=>(random_color), "style"=>"dashed")
+                            dont_repeat[[argh[src],argh[dest]]] = true
+                        #end
                     end
                 end
             end

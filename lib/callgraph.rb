@@ -232,10 +232,11 @@ class Callgraph
     def add_virtual_methods(vtables)
         vtables.each do |cs, value|
             value.each do |id, method|
-                css = cs.gsub(/.variant.$/,"")
+                css = cs.gsub(/.variant.*$/,"")
                 virtual_method = "#{css}$vtable#{id}"
                 declare virtual_method
                 if(method != "(none)" && method != "__cxa_pure_virtual")
+                    #puts "vtable link #{virtual_method} -> #{method}"
                     declare method
                     strict_link(virtual_method, method)
                     self[virtual_method].add_attr :body
@@ -251,34 +252,74 @@ class Callgraph
     # Add Plausible Virtual Method Calls Down the Class Hierarchy
     def add_subclass_calls(classes, vtables)
         classes.each do |sub, supers|
+            currently_processed = 100
             iter  = 0
-            vtoff = 0
-            supers.each do |super_|
-                vt = nil
-                if(iter == 0)
-                    if(vtables.has_key?(sub))
-                        vt = vtables[sub]
-                    end
-                else
-                    if(vtables.has_key?(sub+".variant"+iter.to_s))
-                        vt = vtables[sub+".variant"+iter.to_s]
-                    end
+            vtoff = nil
+            #puts "-------------------------------"
+            #pp sub
+            #pp supers
+            supers.reverse.each do |super_|
+                sp = super_.split "+"
+                supname = sp[0]
+                offset = 0
+                if(sp.length == 2)
+                    offset = sp[1].to_i
                 end
-                if(vt)
-                    vt.length.times do |x|
-                        testing = "#{super_}$vtable#{x}"
-                        source = "#{sub}$vtable#{x+vtoff}"
-                        if(has_method?(testing) || has_method?(source))
-                            declare testing
-                            declare source
-                            strict_link(testing,source)
-                            self[testing].add_attr :body
-                            self[source].add_attr :body
+                #puts "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+                #puts "working on #{supname}-#{offset}"
+                (offset..currently_processed).each do |vt_id|
+                    #vtoff = 0
+                    vt = nil
+                    vt2 = nil
+                    vt_id2 = vt_id-offset
+                    #puts "vt_id2=#{vt_id2}"
+                    if(vt_id == 0)
+                        if(vtables.has_key?(sub))
+                            vt = vtables[sub]
+                        end
+                    else
+                        if(vtables.has_key?(sub+".variant"+vt_id.to_s))
+                            vt = vtables[sub+".variant"+vt_id.to_s]
                         end
                     end
-                    vtoff += vt.length
-                    iter += 1
+                    if(vt_id2 == 0)
+                        if(vtables.has_key?(supname))
+                            vt2 = vtables[supname]
+                        end
+                    else
+                        if(vtables.has_key?(supname+".variant"+vt_id2.to_s))
+                            vt2 = vtables[supname+".variant"+vt_id2.to_s]
+                        end
+                    end
+                    #if(vtables.has_key?(supname))
+                    #    vt2 = vtables[supname]
+                    #end
+                    if(vt && vt2)
+
+                        #pp vt
+                        #pp vt.keys.min
+                        #puts "Oh my head"
+                        #pp vt2
+                        #pp vt2.length
+                        vtoff = vt.keys.min
+                        vtoff2 = vt2.keys.min
+                        vt.length.times do |x|
+                            testing = "#{supname}$vtable#{x+vtoff2}"
+                            source = "#{sub}$vtable#{x+vtoff}"
+                            if((has_method?(testing) || has_method?(source)) && x<vt2.length)
+                                #puts "#{testing} -> #{source}"
+                                declare testing
+                                declare source
+                                strict_link(testing,source)
+                                self[testing].add_attr :body
+                                self[source].add_attr :body
+                            end
+                        end
+                        vtoff += vt.length
+                        iter += 1
+                    end
                 end
+                currently_processed = offset-1
             end
         end
     end

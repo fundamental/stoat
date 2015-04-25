@@ -1,4 +1,10 @@
-class A
+class AA
+{
+    public:
+        virtual ~AA(){}
+};
+
+class A:public AA
 {
     public:
         virtual ~A(){}
@@ -13,6 +19,7 @@ class B
         virtual void mB1()=0;
         virtual void mB2()=0;
         virtual void mB3(){};
+        virtual void mB4(){mB2();}
 };
 
 class C
@@ -35,9 +42,41 @@ class D:public A, public B, public C
         virtual void mD(){};
 };
 
+class X
+{
+    public:
+        virtual ~X() {}
+        virtual void mX(){}
+};
+
+class Y
+{
+    public:
+        virtual ~Y() {}
+};
+
+class E: public X, public Y
+{
+    public:
+        virtual ~E() {}
+        virtual void mE1() {}
+        virtual void mE2()=0; 
+        virtual void mE3() {}
+};
+
+class F:public D, public E
+{
+    public:
+        virtual ~F() {}
+        virtual void mB1() {mF2();}
+        virtual void mF1() {}
+        virtual void mF2() {}
+        virtual void mE2() {}
+};
+
 int main()
 {
-    D *d = new D;
+    D *d = new F;
     d->mA1();
     d->mA2();
 
@@ -78,4 +117,14 @@ void foo_good(B*b) __attribute__((annotate("realtime")))
 void foo_evil(B*b) __attribute__((annotate("realtime")))
 {
     b->mB2();
+}
+
+void foo_evil2(B*b) __attribute__((annotate("realtime")))
+{
+    b->mB4();
+}
+
+void foo_evil3(F *f) __attribute__((annotate("realtime")))
+{
+    f->mF1();
 }

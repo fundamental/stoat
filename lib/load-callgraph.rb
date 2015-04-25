@@ -52,6 +52,9 @@ def load_callgraph(opt, library, files)
         vtable_ninformation = YAML.load_file "stoat_vtable.txt"
         rtosc_ninformation  = YAML.load_file "stoat_rtosc.txt"
 
+        alias_map = create_alias_map(class_nhigh)
+        dealias(alias_map, class_nhigh, ncallgraph)
+
         merge_maps(callgraph, ncallgraph)
         merge_maps(function_props, nfunc)
         merge_maps(class_high, class_nhigh)
@@ -106,6 +109,9 @@ end
 
 def create_alias_map(class_hierarchy)
     class_high = class_hierarchy
+    if(!class_high)
+        return nil
+    end
     alias_map = Hash.new
     class_high.each do |key, val|
         val.each do |x|
@@ -120,16 +126,24 @@ def create_alias_map(class_hierarchy)
 end
 
 def dealias(alias_map, class_high, callgraph)
+    if(!alias_map)
+        return
+    end
     class_high.each do |key, val|
         replace = []
         val.each do |x|
-            if(alias_map.has_key?(x))
-                replace << alias_map[x]
+            sp = x.split("+")
+            if(alias_map.has_key?(sp[0]))
+                if(sp.length == 1)
+                    replace << alias_map[sp[0]]
+                else
+                    replace << alias_map[sp[0]]+"+"+sp[1]
+                end
             else
                 replace << x
             end
         end
-        class_high[key] = val.uniq
+        class_high[key] = replace.uniq
     end
 
     callgraph.each do |parent, children|

@@ -300,6 +300,7 @@ end
 deductions = Deductions::setup(callgraph)
 Deductions::deduce_safe(deductions, callgraph)
 error_count = Deductions::dump_errors(deductions, callgraph)
+Deductions::print_stats deductions
 
 ################################################################################
 #                               Save Graph                                     #

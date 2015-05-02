@@ -154,4 +154,16 @@ class Deductions
         end
         d
     end
+
+    def self.print_stats(deductions)
+        realtime         = 0
+        nonrealtime      = 0
+        deductions.each do |d|
+            realtime    += 1 if d.realtime_p
+            nonrealtime += 1 if d.non_realtime_p
+        end
+        puts "Total Functions:   #{deductions.length}"
+        puts "Total Realtime:    #{realtime}"
+        puts "Total NonRealtime: #{nonrealtime}"
+    end
 end

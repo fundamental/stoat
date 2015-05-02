@@ -1,0 +1,24 @@
+2014-08-15 Mark McCurry
+	- Version 1.0 Release
+2015-03-12 Dominic Sacre
+	- Add Colorized Output
+2015-03-25 Dominic Sacre
+	- Add Shorter Graph Representation
+2015-04-24 Mark McCurry
+	- Version 2.0 Release
+	- Major Refactorization
+	- Make Graphviz Optional
+	- Update Default White/Blacklists
+	- Add Basic Dump Output
+	- Add Support For Try{}Catch{}
+	- Add Support For Rtosc Callbacks
+	- Add Logo Digitized By Harry van Haaren
+	- Add Wildcard Support For Function Specs
+	- Add stoat-compile/stoat-compile++ utility
+	- Add Parallel Analysis
+	- Add Namespace Support
+	- Add Translation Unit Local Template Alias Support 
+	- Add More Global Init Checks
+	- Add Multiple Inheritance Vtable Support
+
+

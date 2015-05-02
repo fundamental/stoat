@@ -231,6 +231,7 @@ class Callgraph
     #                       methods
     def add_virtual_methods(vtables)
         vtables.each do |cs, value|
+            if(value)
             value.each do |id, method|
                 css = cs.gsub(/.variant.*$/,"")
                 virtual_method = "#{css}$vtable#{id}"
@@ -241,6 +242,7 @@ class Callgraph
                     strict_link(virtual_method, method)
                     self[virtual_method].add_attr :body
                 end
+            end
             end
         end
     end

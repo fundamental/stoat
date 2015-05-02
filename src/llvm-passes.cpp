@@ -569,8 +569,9 @@ struct ExtractVtables : public ModulePass {
 
             if(!fname) {
                 int variant_id = 0;
-                if(auto n = dyn_cast<ConstantInt>(op->getOperand(0)))
-                    variant_id = -n->getZExtValue()/8;
+                if(op->getNumOperands())
+                    if(auto n = dyn_cast<ConstantInt>(op->getOperand(0)))
+                        variant_id = -n->getZExtValue()/8;
                 fprintf(stderr, "%s.variant%d:\n", name, variant_id);//++variant);
                 i++;
                 ii+=2;

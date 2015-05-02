@@ -48,7 +48,7 @@ module GraphRender
 
 
     def self.to_graph(deductions, callgraph, graphfile, minimal_graph, shorten)
-        g = GraphViz::new("G")
+        g = GraphViz::new("G", "rankdir"=>"LR")
         important_nodes = Set.new
         color_nodes     = Hash.new
         puts "Coloring Deductions..."

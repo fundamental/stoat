@@ -1,1 +1,1 @@
-foo ==> undefined_function
+foo ==> undefined_.*

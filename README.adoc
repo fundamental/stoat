@@ -21,7 +21,8 @@ code ends up calling what other routines.
 This is further complicated when there is some segregation within one codebase
 which may not be at all clear in implementation.
 This is further complicated by the opaqueness of some C++ techniques, such as
-virtual overloading, operator overloading, and implicit conversions.
+virtual overloading, operator overloading, multiple inheritance, and
+implicit conversions.
 
 Requires
 ~~~~~~~~

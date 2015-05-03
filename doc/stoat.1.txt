@@ -36,7 +36,9 @@ OPTIONS
     The Graph View Output File Name
 *-G, --graph-minimal-view FILE.png*::
     The Minimal Graph View Output File Name
-*-d, --dump FILE.yaml*::
+*-S, --shorten-names*::
+    Omit Namespaces and Template Arguments in Graph
+*-d, --dump FILE.txt*::
     Dump Information Extracted From LLVM IR
 *-c, --color*::
     Colorize Output

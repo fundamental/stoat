@@ -109,7 +109,7 @@ OptionParser.new do |opts|
           options.shorten = true
       end
 
-      opts.on("-d", "--dump FILE.yaml",
+      opts.on("-d", "--dump FILE.txt",
               "Dump Information Extracted From LLVM IR") do |file|
           options.dump_file = file
       end
@@ -290,7 +290,9 @@ Deductions::add_no_body_safety callgraph
 
 #Dump Known information to a file
 if(options.dump_file)
-    puts callgraph.full_to_s
+    File.open(options.dump_file, "w") do |file|
+        file.puts callgraph.full_to_s
+    end
 end
 
 ################################################################################

@@ -124,7 +124,20 @@ end.parse!
 #                        Load Optional Dependencies                            #
 ################################################################################
 if(options.graphfile)
-    require 'graphviz'
+    begin
+        require 'graphviz'
+        test = GraphViz
+    rescue LoadError
+        puts "ruby-graphviz gem could not be loaded"
+        puts "please install it with 'gem install ruby-graphviz'"
+        exit
+    rescue NameError
+        puts "ruby-graphviz gem could not be loaded"
+        puts "to fix this"
+        puts "1) remove conflicting 'graphviz' gem with 'gem uninstall graphviz'"
+        puts "2) install it with 'gem install ruby-graphviz'"
+        exit
+    end
 end
 
 if(options.colorize)

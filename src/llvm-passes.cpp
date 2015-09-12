@@ -591,7 +591,8 @@ struct ExtractVtables : public ModulePass {
         auto &gl = m.getGlobalList();
         for(auto &g:gl) {
             if(g.getName().str().substr(0,4) == "_ZTV") {
-                const char *vtable_name = g.getName().str().c_str();
+                std::string name(g.getName().str());
+                const char *vtable_name = name.c_str();
                 int status = 0;
                 char *realname = abi::__cxa_demangle(vtable_name, 0, 0, &status);
                 if(!realname || strstr(realname, "__cxxabi"))

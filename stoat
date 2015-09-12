@@ -237,9 +237,10 @@ end
 
 #Identify opt binary name
 opt = nil
-["opt-3.3", "opt-3.4", "opt-3.5", "opt"].each do|x|
+["opt", "opt-3-7", "opt-3.6", "opt-3.5", "opt-3.4", "opt-3.3"].each do|x|
     if(!`which #{x} 2> /dev/null`.empty?)
         opt = x
+        break
     end
 end
 

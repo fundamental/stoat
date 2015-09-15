@@ -232,11 +232,11 @@ struct ExtractCallGraph : public FunctionPass {
             }
         }
         if(!v.empty()) {
-            fprintf(stderr, "%s :\n", Fn.getName().str().c_str());
+            fprintf(stderr, "%.1024s :\n", Fn.getName().str().c_str());
             for(auto x:v)
-                fprintf(stderr, "    - %s\n", x.c_str());
+                fprintf(stderr, "    - %.1024s\n", x.c_str());
         } else {
-            fprintf(stderr, "%s :\n", Fn.getName().str().c_str());
+            fprintf(stderr, "%.1024s :\n", Fn.getName().str().c_str());
             fprintf(stderr, "    - nil\n");
         }
         return false;
@@ -255,9 +255,9 @@ struct ExtractAnnotations : public ModulePass {
     {
         if(auto o = dyn_cast<Function>(v))
         {
-            fprintf(stderr, "%s :\n", o->getName().str().c_str());
+            fprintf(stderr, "%.1024s :\n", o->getName().str().c_str());
         } else if(auto s = dyn_cast<GlobalVariable>(v)) {
-            fprintf(stderr, "    - %s\n", dyn_cast<ConstantDataArray>(s->getOperand(0))->getAsString().str().c_str());
+            fprintf(stderr, "    - %.1024s\n", dyn_cast<ConstantDataArray>(s->getOperand(0))->getAsString().str().c_str());
         } else
             fprintf(stderr, "We have a dinosaur\n");
     }
@@ -476,7 +476,7 @@ struct ExtractClassHierarchy : public FunctionPass {
         //        className(fullname.c_str()).c_str());
         std::unique(class_list.begin(), class_list.end());
         if(!class_list.empty() || !alias.empty()) {
-            fprintf(stderr, "%s:\n", className(fullname.c_str()).c_str());
+            fprintf(stderr, "%.1024s:\n", className(fullname.c_str()).c_str());
             if(!alias.empty())
                 fprintf(stderr, "    - alias.%s\n", removeClassStruct(alias).c_str());
             for(auto x:class_list)
@@ -546,7 +546,7 @@ struct ExtractVtables : public ModulePass {
         //Field 0/1 repeat with multiple inheritance
         unsigned ops = v->getNumOperands();
         if(ops >= 2)
-            fprintf(stderr, "%s:\n", name);
+            fprintf(stderr, "%.1024s:\n", name);
         int variant = 0;
         int ii = 0;
         for(unsigned i=2; i<ops; ++i)
@@ -582,7 +582,7 @@ struct ExtractVtables : public ModulePass {
                 tmp++;
             if(tmp)
                 *tmp = 0;
-            fprintf(stderr, "    %d: %s\n", i-2-ii, fname);
+            fprintf(stderr, "    %d: %.1024s\n", i-2-ii, fname);
             free(fname);
         }
     }

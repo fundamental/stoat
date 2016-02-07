@@ -69,7 +69,7 @@ How To Use
 7. Enjoy the safer code
 
 For a more explicit guide please see the tutorial at
-http://log.fundamental-code.com/2014/08/15/stoat-tutorial-example
+http://log.fundamental-code.com/2014/08/15/stoat-tutorial-example.html
 
 License
 ~~~~~~~

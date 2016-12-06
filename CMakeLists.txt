@@ -150,3 +150,14 @@ add_test(namespace-disambiguation
     ${SRC}/test/namespaces.cpp)
 set_property(TEST namespace-disambiguation PROPERTY PASS_REGULAR_EXPRESSION
     "Total of 2 error")
+
+#Test virtual inheritance combined with diamond graph structures
+add_test(diamond
+    ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
+    ${CMAKE_SOURCE_DIR}/stoat
+    ${CMAKE_BINARY_DIR}/libstoat.so
+    ${CLANGPP}
+    ${CMAKE_SOURCE_DIR}/data/whitelist.txt
+    ${CMAKE_SOURCE_DIR}/data/blacklist.txt
+    nil
+    ${SRC}/test/diamond-inherit.cpp)

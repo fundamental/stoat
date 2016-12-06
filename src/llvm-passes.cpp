@@ -402,7 +402,6 @@ struct ExtractClassHierarchy : public FunctionPass {
             if(auto cast = dyn_cast<BitCastInst>(getelm->getOperand(0))) {
                 if(auto load = dyn_cast<LoadInst>(cast->getOperand(0))) {
                     if(this_ptr == dyn_cast<Instruction>(load->getOperand(0))) {
-                        //getelm->dump();
                         if(!dyn_cast<ConstantInt>(getelm->getOperand(1)))
                             return "";
                         unsigned off = dyn_cast<ConstantInt>(getelm->getOperand(1))->getZExtValue()/8;
@@ -412,14 +411,26 @@ struct ExtractClassHierarchy : public FunctionPass {
                         std::string s = ss.str();
                         //fprintf(stderr, "name = %s\n", s.c_str());
                         int l = s.length();
-                        if(s.substr(0,6) == "%class")
-                            return s.substr(7, l-8)+"+"+to_s(off);
-                        if(s.substr(0,7) == "%\"class")
-                            return s.substr(8, l-10)+"+"+to_s(off);
-                        if(s.substr(0,7) == "%struct")
-                            return ss.str().substr(8, l-9)+"+"+to_s(off);
-                        if(s.substr(0,8) == "%\"struct")
-                            return s.substr(9, l-11)+"+"+to_s(off);
+                        //if(off) {
+                            if(s.substr(0,6) == "%class")
+                                return s.substr(7, l-8)+"+"+to_s(off);
+                            if(s.substr(0,7) == "%\"class")
+                                return s.substr(8, l-10)+"+"+to_s(off);
+                            if(s.substr(0,7) == "%struct")
+                                return ss.str().substr(8, l-9)+"+"+to_s(off);
+                            if(s.substr(0,8) == "%\"struct")
+                                return s.substr(9, l-11)+"+"+to_s(off);
+                        //} else {
+                        //    if(s.substr(0,6) == "%class")
+                        //        return s.substr(7, l-8);
+                        //    if(s.substr(0,7) == "%\"class")
+                        //        return s.substr(8, l-10);
+                        //    if(s.substr(0,7) == "%struct")
+                        //        return ss.str().substr(8, l-9);
+                        //    if(s.substr(0,8) == "%\"struct")
+                        //        return s.substr(9, l-11);
+                        //}
+
                     }
                 }
             }
@@ -445,6 +456,8 @@ struct ExtractClassHierarchy : public FunctionPass {
         //later there is a load of this %this.addr
         //if this load is cast into anything other than i8***, then that's a
         //super class
+        //fprintf(stderr, "%s : %s : %s\n", name.c_str(), fullname.c_str(), alias.c_str());
+        //Fn.dump();
 
         std::vector<string> class_list;
         Instruction *this_ptr = NULL;
@@ -553,6 +566,7 @@ struct ExtractVtables : public ModulePass {
         {
             auto op       = v->getOperand(i);
             char *fname = NULL;
+            //op->dump();
             if(!dyn_cast<ConstantPointerNull>(op)) {
                 Function *function = NULL;
                 auto alias    = dyn_cast<GlobalAlias>(op->getOperand(0));
@@ -566,12 +580,29 @@ struct ExtractVtables : public ModulePass {
             }
             if(fname && strlen(fname) == 0)
                 fname = NULL;
+                
+            if(dyn_cast<ConstantPointerNull>(op)) {
+                ii += 1;
+                continue;
+            }
 
             if(!fname) {
                 int variant_id = 0;
-                if(op->getNumOperands())
-                    if(auto n = dyn_cast<ConstantInt>(op->getOperand(0)))
+                if(op->getNumOperands()) {
+                    if(auto n = dyn_cast<ConstantInt>(op->getOperand(0))) {
+                        if(n->getSExtValue() <= 1) {
+                            continue;
+                        }
                         variant_id = -n->getZExtValue()/8;
+                        if(variant_id == -1) {
+                            ii++;
+                            continue;
+                        }
+                    } else {
+                        ii++;
+                        continue;
+                    }
+                }
                 fprintf(stderr, "%s.variant%d:\n", name, variant_id);//++variant);
                 i++;
                 ii+=2;

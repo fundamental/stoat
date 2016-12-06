@@ -321,7 +321,7 @@ class Callgraph
                         iter += 1
                     end
                 end
-                currently_processed = offset-1
+                #currently_processed = offset-1
             end
         end
     end

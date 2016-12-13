@@ -12,7 +12,7 @@ class Deductions
     }
 
     class DeductionChain
-        attr_accessor :deduction_source, :reason, :realtime_p, :non_realtime_p, :has_body_p, :contradicted_p, :contradicted_by
+        attr_accessor :deduction_source, :reason, :realtime_p, :non_realtime_p, :has_body_p, :contradicted_p, :contradicted_by, :file, :line
 
 
         def initialize
@@ -31,16 +31,20 @@ class Deductions
             deduction = deductions[id]
             if(!deduction.contradicted_p && deduction.realtime_p())
                 callgraph.children(id).each do |x|
-                    if(deductions[x].non_realtime_p)
-                        check_next_time << x
+                    if(deductions[x.dest].non_realtime_p)
+                        check_next_time << x.dest
                         deduction.contradicted_p = true
-                        deduction.contradicted_by << x
+                        deduction.contradicted_by << x.dest
+                        deductions[x.dest].file = x.file
+                        deductions[x.dest].line = x.line
                         do_stuff = true
-                    elsif(!deductions[x].realtime_p)
-                        check_next_time << x
-                        deductions[x].realtime_p = true
-                        deductions[x].deduction_source = callgraph.node_list[id].id
-                        deductions[x].reason = :reason_deduced
+                    elsif(!deductions[x.dest].realtime_p)
+                        check_next_time << x.dest
+                        deductions[x.dest].realtime_p = true
+                        deductions[x.dest].deduction_source = callgraph.node_list[id].id
+                        deductions[x.dest].reason = :reason_deduced
+                        deductions[x.dest].file = x.file
+                        deductions[x.dest].line = x.line
                         do_stuff = true
                     end
                 end
@@ -84,14 +88,18 @@ class Deductions
                 while(next_prop) do
                     node = callgraph.node_list[next_prop]
                     string, color = Reasons[deductions[next_prop].reason]
-                    puts " - #{node_name(node)} : #{string.colorize(color)}"
+                    file = deductions[next_prop].file
+                    line = deductions[next_prop].line
+                    puts " - #{node_name(node)} #{file}@#{line} : #{string.colorize(color)}"
                     next_prop = deductions[next_prop].deduction_source
                 end
                 puts "##The Contradiction Reasons:".bold
                 deduction.contradicted_by.each do |x|
                     node = callgraph.node_list[x]
                     string, color = Reasons[deductions[x].reason]
-                    puts " - #{node_name(node)} : #{string.colorize(color)}"
+                    file = deductions[x].file
+                    line = deductions[x].line
+                    puts " - #{node_name(node)} #{file}@#{line} : #{string.colorize(color)}"
                 end
                 puts "\n\n"
             end

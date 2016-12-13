@@ -49,5 +49,5 @@ NARGV.each do |x|
     new_args << x
 end
 if(do_compile && modified)
-    `clang++ -emit-llvm #{new_args.join(' ')} 2>/dev/null`
+    `clang++ -emit-llvm -g #{new_args.join(' ')} 2>/dev/null`
 end

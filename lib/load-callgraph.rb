@@ -80,8 +80,10 @@ def load_callgraph(opt, library, files)
         cg.declare a
         cg[a].add_attr :body
         b.each do |bb|
-            if(bb != "nil")
-                cg.declare bb
+            raise "Invalid Type" if bb.class != Hash
+            b_ = bb["name"]
+            if(b_ != "nil")
+                cg.declare b_
             end
         end
     end
@@ -89,8 +91,10 @@ def load_callgraph(opt, library, files)
     #Declare All Known Edges
     callgraph.each do |a,b|
         b.each do |bb|
+            b_  = bb["name"]
+            b__ = bb["line"]
             if(bb != "nil")
-                cg.strict_link(a,bb)
+                cg.strict_link(a,b_,b__,bb["file"])
             end
         end
     end
@@ -125,6 +129,12 @@ def create_alias_map(class_hierarchy)
     alias_map
 end
 
+def partial_clone(x,new_name)
+    x.clone
+    x["name"] = new_name
+    x
+end
+
 def dealias(alias_map, class_high, callgraph)
     if(!alias_map)
         return
@@ -148,17 +158,20 @@ def dealias(alias_map, class_high, callgraph)
 
     callgraph.each do |parent, children|
         replace = []
+        next if children.nil?
         children.each do |child|
-            parts = child.split '$'
+            next if child.nil? || child == "nil"
+            next if child["name"].nil? || child["name"] == "nil"
+            parts = child["name"].split '$'
             if(parts.length == 2)
                 if(alias_map.has_key?(parts[0]))
                     parts[0] = alias_map[parts[0]]
                 end
                 if((/^class/.match parts.join("$")) ||
                    (/^struct/.match parts.join("$")))
-                    replace << parts.join("$")
+                    replace << partial_clone(child,parts.join("$"))
                 else
-                    replace << parts.join("$")
+                    replace << partial_clone(child,parts.join("$"))
                 end
             else
                 replace << child

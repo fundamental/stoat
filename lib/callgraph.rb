@@ -66,20 +66,24 @@ class CallgraphNode
 end
 
 class CallgraphEdge
-    def initialize(id, src, dest)
+    def initialize(id, src, dest, line, file)
         @id       = id
         @src      = src
         @dest     = dest
+        @line     = line
+        @file     = file
         @attr     = Set.new
         @suppress = false
     end
     def to_s
-        "<CGedge:#{id} #{src} #{dest} #{attr.to_a}>"
+        "<CGedge:#{id} #{src} #{dest} #{line}@#{file} #{attr.to_a}>"
     end
     attr_accessor :id
     attr_accessor :src
     attr_accessor :dest
     attr_accessor :attr
+    attr_accessor :line
+    attr_accessor :file
 end
 
 class Callgraph
@@ -138,6 +142,15 @@ class Callgraph
         throw "Unknown Symbol '#{mangled}'"
     end
 
+    class Edge
+        def initialize(dest, file, line)
+            @dest = dest
+            @file = file
+            @line = line
+        end
+        attr_reader :dest, :file, :line
+    end
+
     def rebuild_edge_cache()
         def push_to_array(a,b,c)
             if(a.has_key?(b))
@@ -150,7 +163,8 @@ class Callgraph
         @inverse_edge_map = Hash.new
         @edge_list.each do |edge|
             if(!edge.attr.include?(:suppress))
-                push_to_array(@edge_map, edge.src, edge.dest)
+                ed = Edge.new(edge.dest, edge.file, edge.line)
+                push_to_array(@edge_map, edge.src, ed)
                 push_to_array(@inverse_edge_map, edge.dest, edge.src)
             end
         end
@@ -186,7 +200,7 @@ class Callgraph
         has_id_link?(self[a].id, self[b].id)
     end
 
-    def strict_link(a,b)
+    def strict_link(a, b, line="?", file="?")
         src  = self[a].id
         dest = self[b].id
 
@@ -194,7 +208,7 @@ class Callgraph
             return
         end
         @edge_cache[[src,dest]] = @edge_list.length
-        @edge_list << CallgraphEdge.new(@edge_list.length, src, dest)
+        @edge_list << CallgraphEdge.new(@edge_list.length, src, dest, line, file)
     end
 
     # Add Implicit Calls Between Constructor Variants
@@ -205,7 +219,7 @@ class Callgraph
                 sym_mod = sym.gsub(/D1Ev$/, "D2Ev")
                 declare sym
                 declare sym_mod
-                strict_link(sym, sym_mod)
+                strict_link(sym, sym_mod, "?", "anonymous")
                 self[sym].add_attr :body
             end
         end

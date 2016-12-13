@@ -23,6 +23,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Metadata.h>
 #include <llvm/Pass.h>
 #include <cassert>
 #include <cxxabi.h>
@@ -130,9 +131,17 @@ string getTypeTheHardWay(llvm::Value *val, Function &Fn)
     return "unknown-type-name"; //failure...
 }
 
-struct ExtractCallGraph : public FunctionPass {
+struct CallSite {
+    std::string name;
+    std::string type;
+    std::string file;
+    int         line;
+    int         column;
+};
+
+struct ExtractCallGraph : public ModulePass {
     static char ID;
-    ExtractCallGraph() : FunctionPass(ID) {}
+    ExtractCallGraph() : ModulePass(ID) {}
 
     void getAnalysisUsage(AnalysisUsage &AU) const override {
         AU.setPreservesAll();
@@ -156,7 +165,7 @@ struct ExtractCallGraph : public FunctionPass {
         return removeClassStruct(replacement);
     }
 
-    std::string runOnCallInst(CallInst *call, Function &Fn)
+    CallSite runOnCallInst(CallInst *call, Function &Fn)
     {
         auto fn2  = call->getCalledFunction();
         auto it   = call->getCalledValue();
@@ -195,8 +204,9 @@ struct ExtractCallGraph : public FunctionPass {
                 exit(1);
             }
         } else {
-            return "";
+            return CallSite();
         }
+
         if(s == "llvm.dbg.value" || s == "llvm.var.annotation"
                 || s == "llvm.stackrestore" || s == "llvm.stacksave"
                 || s == "llvm.va_start"
@@ -210,35 +220,103 @@ struct ExtractCallGraph : public FunctionPass {
                 || strstr(s.c_str(), "llvm.sqrt")
                 || strstr(s.c_str(), "llvm.") //TODO check for false captures
                 || strstr(s.c_str(), "llvm.umul"))
-            return "";
-        return s;
+            return CallSite();
+
+        CallSite cs;
+        cs.name   = s;
+        cs.line   = call->getDebugLoc().getLine();
+        cs.column = call->getDebugLoc().getCol();
+        return cs;
     }
 
-    bool runOnFunction(Function &Fn) override {
-        std::vector<string> v;
+    CallSite runOnInvokeInst(InvokeInst *invoke, Function &Fn)
+    {
+        string s;
+        if(invoke->getCalledFunction())
+            s = invoke->getCalledFunction()->getName().str();
+
+        CallSite cs;
+        cs.type   = "invoke";
+        cs.name   = s;
+        cs.line   = invoke->getDebugLoc().getLine();
+        cs.column = invoke->getDebugLoc().getCol();
+        return cs;
+    }
+
+    bool runOnFunction(Function &Fn, std::string filename=""){
+        std::vector<CallSite> v;
+        bool defined = false;
         for(auto &bb:Fn) {
+            defined = true;
             for(auto &i:bb) {
                 if(i.getOpcode() == Instruction::Call) {
                     auto s = runOnCallInst(dyn_cast<CallInst>(&i), Fn);
-                    if(!s.empty())
+                    s.file = filename;
+                    if(!s.name.empty())
                         v.push_back(s);
                 } else if(i.getOpcode() == Instruction::Invoke) {
-                    auto invoke = dyn_cast<InvokeInst>(&i);
-                    if(invoke->getCalledFunction())
-                        v.push_back(invoke->getCalledFunction()->getName().str());
-                    //else
-                    //    fprintf(stderr, "Oh no, not this again\n");
+                    auto s = runOnInvokeInst(dyn_cast<InvokeInst>(&i), Fn);
+                    s.file = filename;
+                    v.push_back(s);
                 }
             }
         }
+
+        //Avoid Functions which are only forward declarations
+        if(!defined)
+            return false;
+
         if(!v.empty()) {
             fprintf(stderr, "%.1024s :\n", Fn.getName().str().c_str());
-            for(auto x:v)
-                fprintf(stderr, "    - %.1024s\n", x.c_str());
+            for(auto x:v) {
+                fprintf(stderr, "    - name: %.1024s\n", x.name.c_str());
+                fprintf(stderr, "      file: %.1024s\n", x.file.c_str());
+                fprintf(stderr, "      type: %.1024s\n", x.type.c_str());
+                fprintf(stderr, "      line: %d\n",      x.line);
+                fprintf(stderr, "      col:  %d\n",      x.column);
+            }
         } else {
             fprintf(stderr, "%.1024s :\n", Fn.getName().str().c_str());
             fprintf(stderr, "    - nil\n");
         }
+        return false;
+    }
+
+    std::string getSourceFileName(Module &m)
+    {
+        auto mm = m.named_metadata();
+        for(auto &gg:mm) {
+            bool is_dwarf_start = (gg.getName() == "llvm.dbg.cu");
+            if(!is_dwarf_start)
+                continue;
+            for(auto *ggg:gg.operands()) {
+                int ops = ggg->getNumOperands();
+                for(int i=0; i<ops; ++i) {
+                    auto *arg = ggg->getOperand(i);
+                    bool meta = arg->getType()->isMetadataTy();
+                    if(!meta)
+                        continue;
+
+                    auto *meta2 = dyn_cast<MDNode>(arg);
+                    if(!meta2)
+                        continue;
+
+                    if(meta2->getNumOperands() != 2)
+                        continue;
+                    return meta2->getOperand(0)->getName().str();
+                }
+            }
+        }
+        return "(anonymous)";
+    }
+
+    bool runOnModule(Module &m) override {
+        std::string file = getSourceFileName(m);
+
+        auto &flist = m.getFunctionList();
+        for(auto &f:flist)
+            runOnFunction(f, file);
+
         return false;
     }
 };
@@ -498,7 +576,7 @@ struct ExtractClassHierarchy : public FunctionPass {
 
 
     }
-    
+
     std::string removeUniqueTail(std::string name)
     {
         char *dpos = rindex((char*)name.c_str(), '.');
@@ -580,7 +658,7 @@ struct ExtractVtables : public ModulePass {
             }
             if(fname && strlen(fname) == 0)
                 fname = NULL;
-                
+
             if(dyn_cast<ConstantPointerNull>(op)) {
                 ii += 1;
                 continue;

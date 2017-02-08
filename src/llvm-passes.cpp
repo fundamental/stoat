@@ -782,7 +782,11 @@ struct ExtractRtosc : public FunctionPass {
                 }
 
                 if(state == CALLBACK) {
-                    assert(i.getOpcode() == Instruction::Invoke);
+                    if(i.getOpcode() != Instruction::Invoke) {
+                        state = NONE;
+                        continue;
+                    }
+
                     //There should be 4 arguments
                     //0: std::function memory pointer
                     //1: std::function<> constructor

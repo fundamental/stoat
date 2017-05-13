@@ -1,6 +1,7 @@
 cos cosl cosf
 sin sinl sinf
 tan tanl tanf
+tanh tanhl tanhf
 abs fabs fabsf fabsl cabs
 fmin fminf fminl
 fmax fmaxf fmaxl
@@ -74,8 +75,10 @@ sqrt
 floor
 floorf
 sqrtf
+ffs
 lrintf
 rintf
+lrint
 llrint
 nearbyintf
 round roundf roundl

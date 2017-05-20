@@ -557,6 +557,8 @@ struct ExtractVtables : public ModulePass {
         //Field 2 - Offset 0 virtual method
         //Field N - Offset N-2 virtual method
         //Field 0/1 repeat with multiple inheritance
+        if(!name || !v)
+            return;
         unsigned ops = v->getNumOperands();
         if(ops >= 2)
             fprintf(stderr, "%.1024s:\n", name);
@@ -566,7 +568,8 @@ struct ExtractVtables : public ModulePass {
         {
             auto op       = v->getOperand(i);
             char *fname = NULL;
-            //op->dump();
+            if(!op)
+                continue;
             if(!dyn_cast<ConstantPointerNull>(op)) {
                 Function *function = NULL;
                 auto alias    = dyn_cast<GlobalAlias>(op->getOperand(0));
@@ -633,7 +636,7 @@ struct ExtractVtables : public ModulePass {
                     tmp++;
                 *tmp = 0;
 
-                if(g.getNumOperands())
+                if(g.getNumOperands() && strlen(realname) > 11)
                     handleVtable(realname+11, dyn_cast<ConstantArray>(g.getOperand(0)));
             }
         }

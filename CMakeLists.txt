@@ -66,6 +66,20 @@ set_property(TEST test-one
     ${SRC}/test/suppression_example.txt
     ${SRC}/test/test-input.c)
 
+add_test(suppression-two
+    ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb
+    ${CMAKE_SOURCE_DIR}/stoat
+    ${CMAKE_BINARY_DIR}/libstoat.so
+    ${CLANG}
+    ${CMAKE_SOURCE_DIR}/data/whitelist.txt
+    ${CMAKE_SOURCE_DIR}/data/blacklist.txt
+    ${SRC}/test/suppression_two.txt
+    ${SRC}/test/test-suppression.c)
+
+set_property(TEST suppression-two
+    PROPERTY PASS_REGULAR_EXPRESSION
+    "1 error")
+
 #Check that information is translated over multiple translation units
 add_test(multi-translation-unit
     ${RUBY} ${CMAKE_SOURCE_DIR}/test/run-test.rb

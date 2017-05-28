@@ -552,6 +552,7 @@ struct ExtractVtables : public ModulePass {
 
     void handleVtable(const char *name, ConstantArray *v)
     {
+        printf("handleVtable(%s, %p)\n", name, v);
         //Field 0 - NULL?
         //Field 1 - Typeinfo
         //Field 2 - Offset 0 virtual method
@@ -560,6 +561,7 @@ struct ExtractVtables : public ModulePass {
         if(!name || !v)
             return;
         unsigned ops = v->getNumOperands();
+        printf("ops = %d\n", ops);
         if(ops >= 2)
             fprintf(stderr, "%.1024s:\n", name);
         int variant = 0;
@@ -567,6 +569,7 @@ struct ExtractVtables : public ModulePass {
         for(unsigned i=2; i<ops; ++i)
         {
             auto op       = v->getOperand(i);
+            op->dump();
             char *fname = NULL;
             if(!op)
                 continue;
@@ -627,8 +630,10 @@ struct ExtractVtables : public ModulePass {
             if(g.getName().str().substr(0,4) == "_ZTV") {
                 std::string name(g.getName().str());
                 const char *vtable_name = name.c_str();
+                printf("vtable_name = %s\n", vtable_name);
                 int status = 0;
                 char *realname = abi::__cxa_demangle(vtable_name, 0, 0, &status);
+                printf("realname = %s\n", realname);
                 if(!realname || strstr(realname, "__cxxabi"))
                     continue;
                 char *tmp = realname;

@@ -2,22 +2,23 @@ language: cpp
 compiler:
     - clang
 before_install:
-    - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-    - sudo apt-get -qq update
-    - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key|sudo apt-key add -
-    - echo "deb http://apt.llvm.org/precise/ llvm-toolchain-precise-4.0 main" | sudo tee -a /etc/apt/sources.list
-    - sudo apt-get -qq update
-    - sudo apt-get install clang-4.0 libclang-common-4.0-dev libclang-4.0-dev libclang1-4.0 libllvm4.0 libllvm4.0-dbg llvm-4.0 llvm-4.0-dev llvm-4.0-runtime
-    - mkdir -p symlinks
-    - ln -s /usr/bin/g++-4.9 symlinks/g++
-    - ln -s /usr/bin/gcc-4.9 symlinks/gcc
-    - ln -s /usr/bin/gcov-4.9 symlinks/gcov
-    - ln -s /usr/bin/clang-4.0 symlinks/clang
-    - ln -s /usr/bin/clang++-4.0 symlinks/clang++
-    - ln -s /usr/bin/llvm-cov-4.0 symlinks/llvm-cov
-    - ln -s /usr/bin/llvm-config-4.0 symlinks/llvm-config
-    - ln -s /usr/bin/opt-4.0 symlinks/opt
-    - export PATH=$PWD/symlinks:$PATH
+    - if [[ $NEW_LLVM == true ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi;
+    - if [[ $NEW_LLVM == true ]]; then sudo apt-get -qq update; fi;
+    - if [[ $NEW_LLVM == true ]]; then wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key|sudo apt-key add -; fi;
+    - if [[ $NEW_LLVM == true ]]; then echo "deb http://apt.llvm.org/precise/ llvm-toolchain-precise-4.0 main" | sudo tee -a /etc/apt/sources.list; fi;
+    - if [[ $NEW_LLVM == true ]]; then sudo apt-get -qq update; fi;
+    - sudo apt-get install -qq llvm-dev
+    - if [[ $NEW_LLVM == true ]]; then sudo apt-get install clang-4.0 llvm-4.0-dev; fi;
+    - if [[ $NEW_LLVM == true ]]; then mkdir -p symlinks; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/g++-4.9 symlinks/g++; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/gcc-4.9 symlinks/gcc; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/gcov-4.9 symlinks/gcov; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/clang-4.0 symlinks/clang; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/clang++-4.0 symlinks/clang++; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/llvm-cov-4.0 symlinks/llvm-cov; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/llvm-config-4.0 symlinks/llvm-config; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/opt-4.0 symlinks/opt; fi;
+    - if [[ $NEW_LLVM == true ]]; then export PATH=$PWD/symlinks:$PATH; fi;
 script:
     - mkdir build
     - cd build
@@ -26,8 +27,7 @@ script:
     - cmake ..
     - make
     - clang++ -c -emit-llvm ../test/virtual-methods.cpp
-    - /usr/bin/llvm-dis-4.0 < ./virtual-methods.bc
-    - opt -load ./libstoat.so --extract-vtables ./virtual-methods.bc
-    - opt -load ./libstoat.so --extract-callgraph ./virtual-methods.bc 
-    - opt -load ./libstoat.so --extract-class-hierarchy ./virtual-methods.bc
     - ctest --output-on-failure
+env:
+    - NEW_LLVM=true
+    - NEW_LLVM=false

@@ -641,6 +641,7 @@ struct ExtractVtables : public ModulePass {
                     tmp++;
                 *tmp = 0;
 
+                g.getOperand(0)->getType()->dump();
                 if(g.getNumOperands() && strlen(realname) > 11)
                     handleVtable(realname+11, dyn_cast<ConstantArray>(g.getOperand(0)));
             }

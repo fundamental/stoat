@@ -25,4 +25,8 @@ script:
     - clang --version
     - cmake ..
     - make
+    - clang++ -c -emit-llvm ../test/virtual-methods.cpp
+    - opt -load ./libstoat.so --extract-vtables ./virtual-methods.bc
+    - opt -load ./libstoat.so --extract-callgraph ./virtual-methods.bc 
+    - opt -load ./libstoat.so --extract-class-hierarchy ./virtual-methods.bc
     - ctest --output-on-failure

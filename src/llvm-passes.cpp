@@ -552,7 +552,7 @@ struct ExtractVtables : public ModulePass {
 
     void handleVtable(const char *name, ConstantArray *v)
     {
-        printf("handleVtable(%s, %p)\n", name, v);
+        //printf("handleVtable(%s, %p)\n", name, v);
         //Field 0 - NULL?
         //Field 1 - Typeinfo
         //Field 2 - Offset 0 virtual method
@@ -561,7 +561,7 @@ struct ExtractVtables : public ModulePass {
         if(!name || !v)
             return;
         unsigned ops = v->getNumOperands();
-        printf("ops = %d\n", ops);
+        //printf("ops = %d\n", ops);
         if(ops >= 2)
             fprintf(stderr, "%.1024s:\n", name);
         int variant = 0;
@@ -569,7 +569,7 @@ struct ExtractVtables : public ModulePass {
         for(unsigned i=2; i<ops; ++i)
         {
             auto op       = v->getOperand(i);
-            op->dump();
+            //op->dump();
             char *fname = NULL;
             if(!op)
                 continue;
@@ -630,10 +630,10 @@ struct ExtractVtables : public ModulePass {
             if(g.getName().str().substr(0,4) == "_ZTV") {
                 std::string name(g.getName().str());
                 const char *vtable_name = name.c_str();
-                printf("vtable_name = %s\n", vtable_name);
+                //printf("vtable_name = %s\n", vtable_name);
                 int status = 0;
                 char *realname = abi::__cxa_demangle(vtable_name, 0, 0, &status);
-                printf("realname = %s\n", realname);
+                //printf("realname = %s\n", realname);
                 if(!realname || strstr(realname, "__cxxabi"))
                     continue;
                 char *tmp = realname;
@@ -641,14 +641,14 @@ struct ExtractVtables : public ModulePass {
                     tmp++;
                 *tmp = 0;
 
-                printf("isArray?(%d)\n", g.getOperand(0)->getType()->isArrayTy());
-                printf("isAggregateType?(%d)\n", g.getOperand(0)->getType()->isAggregateType());
-                g.getOperand(0)->getType()->dump();
-                printf("isconstdata array = %p\n", dyn_cast<ConstantDataArray>(g.getOperand(0)));
-                printf("isconst array     = %p\n", dyn_cast<ConstantArray>(g.getOperand(0)));
-                printf("isconst           = %p\n", dyn_cast<Constant>(g.getOperand(0)));
-                Constant *c = dyn_cast<Constant>(g.getOperand(0));
-                printf("const element = %p\n", c->getAggregateElement((unsigned)0));
+                //printf("isArray?(%d)\n", g.getOperand(0)->getType()->isArrayTy());
+                //printf("isAggregateType?(%d)\n", g.getOperand(0)->getType()->isAggregateType());
+                //g.getOperand(0)->getType()->dump();
+                //printf("isconstdata array = %p\n", dyn_cast<ConstantDataArray>(g.getOperand(0)));
+                //printf("isconst array     = %p\n", dyn_cast<ConstantArray>(g.getOperand(0)));
+                //printf("isconst           = %p\n", dyn_cast<Constant>(g.getOperand(0)));
+                //Constant *c = dyn_cast<Constant>(g.getOperand(0));
+                //printf("const element = %p\n", c->getAggregateElement((unsigned)0));
                 ConstantArray *constarray = 0;
                 if(g.getNumOperands()) {
                     Constant *co = dyn_cast<Constant>(g.getOperand(0));
@@ -658,8 +658,8 @@ struct ExtractVtables : public ModulePass {
                 }
                 if(constarray && strlen(realname) > 11)
                     handleVtable(realname+11, constarray);
-                else
-                    printf("handleVtable(%s, %p)\n", realname+11, constarray);
+                //else
+                //    printf("handleVtable(%s, %p)\n", realname+11, constarray);
             }
         }
         return false;

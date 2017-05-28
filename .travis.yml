@@ -2,16 +2,19 @@ language: cpp
 compiler:
     - clang
 before_install:
-    - sudo apt-get -qq remove llvm clang
+    - sudo apt-get -qq remove llvm
+    - sudo apt-get -qq remove clang
     - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     - sudo apt-get -qq update
     - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key|sudo apt-key add -
     - echo "deb http://apt.llvm.org/precise/ llvm-toolchain-precise-4.0 main" | sudo tee -a /etc/apt/sources.list
     - sudo apt-get -qq update
-    - sudo apt-get install clang-4.0 clang-4.0-doc libclang-common-4.0-dev libclang-4.0-dev libclang1-4.0 libclang1-4.0-dbg libllvm-4.0-ocaml-dev libllvm4.0 libllvm4.0-dbg llvm-4.0 llvm-4.0-dev llvm-4.0-doc llvm-4.0-runtime
+    - sudo apt-get install clang-4.0 libclang-common-4.0-dev libclang-4.0-dev libclang1-4.0 libllvm4.0 libllvm4.0-dbg llvm-4.0 llvm-4.0-dev llvm-4.0-runtime
 script:
     - mkdir build
     - cd build
+    - llvm-config --version
+    - clang --version
     - cmake ..
     - make
     - ctest --output-on-failure

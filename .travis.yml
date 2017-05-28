@@ -2,8 +2,8 @@ language: cpp
 compiler:
     - clang
 before_install:
-    - sudo apt-get -qq remove llvm
-    - sudo apt-get -qq remove clang
+    - sudo apt-get -qq --purge remove llvm
+    - sudo apt-get -qq --purge remove clang
     - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     - sudo apt-get -qq update
     - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key|sudo apt-key add -

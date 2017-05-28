@@ -2,10 +2,31 @@ language: cpp
 compiler:
     - clang
 before_install:
+    - if [[ $NEW_LLVM == true ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi;
+    - if [[ $NEW_LLVM == true ]]; then sudo apt-get -qq update; fi;
+    - if [[ $NEW_LLVM == true ]]; then wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key|sudo apt-key add -; fi;
+    - if [[ $NEW_LLVM == true ]]; then echo "deb http://apt.llvm.org/precise/ llvm-toolchain-precise-4.0 main" | sudo tee -a /etc/apt/sources.list; fi;
+    - if [[ $NEW_LLVM == true ]]; then sudo apt-get -qq update; fi;
     - sudo apt-get install -qq llvm-dev
+    - if [[ $NEW_LLVM == true ]]; then sudo apt-get install clang-4.0 llvm-4.0-dev; fi;
+    - if [[ $NEW_LLVM == true ]]; then mkdir -p symlinks; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/g++-4.9 symlinks/g++; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/gcc-4.9 symlinks/gcc; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/gcov-4.9 symlinks/gcov; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/clang-4.0 symlinks/clang; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/clang++-4.0 symlinks/clang++; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/llvm-cov-4.0 symlinks/llvm-cov; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/llvm-config-4.0 symlinks/llvm-config; fi;
+    - if [[ $NEW_LLVM == true ]]; then ln -s /usr/bin/opt-4.0 symlinks/opt; fi;
+    - if [[ $NEW_LLVM == true ]]; then export PATH=$PWD/symlinks:$PATH; fi;
 script:
     - mkdir build
     - cd build
+    - llvm-config --version
+    - clang --version
     - cmake ..
     - make
     - ctest --output-on-failure
+env:
+    - NEW_LLVM=true
+    - NEW_LLVM=false

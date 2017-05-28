@@ -636,8 +636,15 @@ struct ExtractVtables : public ModulePass {
                     tmp++;
                 *tmp = 0;
 
-                if(g.getNumOperands() && strlen(realname) > 11)
-                    handleVtable(realname+11, dyn_cast<ConstantArray>(g.getOperand(0)));
+                ConstantArray *constarray = 0;
+                if(g.getNumOperands()) {
+                    Constant *co = dyn_cast<Constant>(g.getOperand(0));
+                    constarray = dyn_cast<ConstantArray>(co);
+                    if(!constarray && co->getNumOperands())
+                        constarray = dyn_cast<ConstantArray>(co->getAggregateElement((unsigned)0));
+                }
+                if(constarray && strlen(realname) > 11)
+                    handleVtable(realname+11, constarray);
             }
         }
         return false;

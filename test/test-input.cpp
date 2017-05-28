@@ -1,6 +1,6 @@
 #define REALTIME __attribute__((annotate("realtime")))
 #define NREALTIME __attribute__((annotate("!realtime")))
-#include "test-input2.h"
+void other_thing(void);
 
 class TestClass
 {

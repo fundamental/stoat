@@ -26,6 +26,7 @@ script:
     - cmake ..
     - make
     - clang++ -c -emit-llvm ../test/virtual-methods.cpp
+    - /usr/bin/llvm-dis-4.0 < ./virtual-methods.bc
     - opt -load ./libstoat.so --extract-vtables ./virtual-methods.bc
     - opt -load ./libstoat.so --extract-callgraph ./virtual-methods.bc 
     - opt -load ./libstoat.so --extract-class-hierarchy ./virtual-methods.bc

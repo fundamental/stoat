@@ -646,6 +646,9 @@ struct ExtractVtables : public ModulePass {
                 g.getOperand(0)->getType()->dump();
                 printf("isconstdata array = %p\n", dyn_cast<ConstantDataArray>(g.getOperand(0)));
                 printf("isconst array     = %p\n", dyn_cast<ConstantArray>(g.getOperand(0)));
+                printf("isconst           = %p\n", dyn_cast<Constant>(g.getOperand(0)));
+                Constant *c = dyn_cast<Constant>(g.getOperand(0));
+                printf("const element = %p\n", c->getAggregateElement((int)0));
                 if(g.getNumOperands() && strlen(realname) > 11)
                     handleVtable(realname+11, dyn_cast<ConstantArray>(g.getOperand(0)));
             }

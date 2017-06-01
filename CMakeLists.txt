@@ -11,6 +11,8 @@ if(NOT RUBY OR NOT CLANG OR NOT CLANGPP)
     message(error_fatal "Missing Dependencies...")
 endif()
 
+option(DISABLE_LDCONFIG "Disable running ldconfig on install")
+
 link_directories(${LLVM_LIB_DIR})
 include_directories(${LLVM_INCLUDE_DIRS})
 
@@ -35,7 +37,10 @@ install(PROGRAMS ${CMAKE_SOURCE_DIR}/lib/callgraph.rb
     DESTINATION share/stoat)
 install(FILES ${CMAKE_SOURCE_DIR}/data/whitelist.txt
               ${CMAKE_SOURCE_DIR}/data/blacklist.txt DESTINATION share/stoat)
-install(SCRIPT cmake/InstallScript.cmake)
+if (NOT ${DISABLE_LDCONFIG})
+    install(SCRIPT cmake/InstallScript.cmake)
+endif()
+
 
 ######################################################################
 #               Tests to verify it works                             #

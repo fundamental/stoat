@@ -533,7 +533,7 @@ struct ExtractClassHierarchy : public FunctionPass {
                 findSuperClasses(Fn, getMethodName(realname), fullname);
             } else if(isTemplateConstructorp(fullname.c_str())) {
                 //fprintf(stderr, "It's a template constructor\n");
-                std::string alias_type = Fn.getArgumentList().front().getType()->getPointerElementType()->getScalarType()->getStructName().str();
+                std::string alias_type = Fn.arg_begin()->getType()->getPointerElementType()->getScalarType()->getStructName().str();
                 findSuperClasses(Fn, getMethodName(realname), fullname, removeUniqueTail(alias_type));
             }
         }

@@ -180,3 +180,7 @@ add_test(diamond
     ${CMAKE_SOURCE_DIR}/data/blacklist.txt
     nil
     ${SRC}/test/diamond-inherit.cpp)
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set(CMAKE_SHARED_LINKER_FLAGS "-undefined dynamic_lookup")
+endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

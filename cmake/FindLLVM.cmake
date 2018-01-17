@@ -8,9 +8,9 @@
 # LLVM_INSTALL_PREFIX   - Installation location of llvm
 
 find_program(LLVM_CONFIG
-    NAMES llvm-config llvm-config-37 llvm-config-3.7 llvm-config-36 llvm-config-3.6
+    NAMES llvm-config llvm-config-4.0 llvm-config-3.9 llvm-config-37 llvm-config-3.7 llvm-config-36 llvm-config-3.6
           llvm-config-35 llvm-config-3.5 llvm-config-34 llvm-config-3.4 llvm-config-33 llvm-config-3.3
-    PATHS /usr/bin /usr/local/bin 
+    PATHS /usr/bin /usr/local/bin
     DOC "llvm-config Configuration Helper")
 if(LLVM_CONFIG STREQUAL "LLVM_CONFIG-NOTFOUND")
     set(LLVM_FOUND 1)

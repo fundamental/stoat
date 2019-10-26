@@ -769,12 +769,13 @@ struct ExtractRtosc : public FunctionPass {
         };
         std::vector<RtInfo> v;
         RtInfo current;
-
         //collect name then meta then func
         for(auto &bb:Fn) {
             for(auto &i:bb) {
                 auto opcode = i.getOpcode();
                 //i.dump();
+
+                // get "state" of declarator and wait for initializer
                 if(state == NONE && opcode == Instruction::GetElementPtr) {
                     auto inst = dyn_cast<GetElementPtrInst>(&i);
                     if(isCallback(inst)) state = CALLBACK;
@@ -783,18 +784,31 @@ struct ExtractRtosc : public FunctionPass {
                     continue;
                 }
 
-                if(state == CALLBACK) {
+                // get more information from initializer
+                if(state == CALLBACK && i.getNumOperands() >= 4) {
                     if(i.getOpcode() != Instruction::Invoke) {
                         state = NONE;
                         continue;
                     }
 
-                    //There should be 4 arguments
-                    //0: std::function memory pointer
-                    //1: std::function<> constructor
-                    //2: continue instruction pointer
-                    //3: failure instruction pointer
-                    auto fn = runOnLambdaConstructor(*dyn_cast<Function>(i.getOperand(1)));
+                    // It's unclear where the function pointer is, since the
+                    // ABI changes here every now and then
+                    // So just get any function pointer of any operand
+                    auto findFunctionPointer = [](Instruction& i)
+                    {
+                        auto max = i.getNumOperands();
+                        Function* found = nullptr;
+                        for(decltype(max) x = 0; !found && x < max; ++x)
+                        {
+                            found = dyn_cast<Function>(i.getOperand(x));
+                        }
+                        assert(found);
+                        return found;
+                    };
+                    Function* functionFound = findFunctionPointer(i);
+                    if(!functionFound)
+                        continue;
+                    auto fn = runOnLambdaConstructor(*functionFound);
                     current.func = fn;
                     v.push_back(current);
                     current = {"INVALID","INVALID","INVALID"};

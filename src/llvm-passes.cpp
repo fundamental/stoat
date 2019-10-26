@@ -25,6 +25,7 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/Pass.h>
+#include <llvm/Support/Regex.h>
 #include <cassert>
 #include <cxxabi.h>
 #include <sstream>
@@ -758,18 +759,8 @@ struct ExtractRtosc : public FunctionPass {
 #define NAME     (2)
 #define META     (3)
     bool runOnFunction(Function &Fn) override {
-        //TODO check for the existance of an __cxx_global_var_init$N for an
-        //arbitrary N
-        if(!(Fn.getName() == "__cxx_global_var_init"
-                    || Fn.getName() == "__cxx_global_var_init1"
-                    || Fn.getName() == "__cxx_global_var_init2"
-                    || Fn.getName() == "__cxx_global_var_init3"
-                    || Fn.getName() == "__cxx_global_var_init4"
-                    || Fn.getName() == "__cxx_global_var_init5"
-                    || Fn.getName() == "__cxx_global_var_init6"
-                    || Fn.getName() == "__cxx_global_var_init7"
-                    || Fn.getName() == "__cxx_global_var_init8"
-                    || Fn.getName() == "__cxx_global_var_init9"))
+        llvm::Regex regex("^__cxx_global_var_init\\.?[0-9]+$");
+        if(!regex.match(Fn.getName()))
             return false;
 
         int state = NONE;

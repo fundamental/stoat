@@ -65,7 +65,7 @@ options.shorten = false
 options.colorize = false
 
 OptionParser.new do |opts|
-      opts.banner = "Usage: stoat [options] FILES"
+      opts.banner = "Usage: stoat [options] [FILES]"
 
       opts.on("-w", "--whitelist FILE",
               "Define a Whitelist File") do |list|
@@ -83,7 +83,7 @@ OptionParser.new do |opts|
       end
 
       opts.on("-r", "--recursive DIR",
-              "Enable Recursive Search Mode") do |dir|
+              "Enable Recursive Search Mode (this makes FILES optional)") do |dir|
           options.recursive = true
           options.root = dir
       end

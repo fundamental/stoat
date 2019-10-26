@@ -672,11 +672,10 @@ struct ExtractRtosc : public FunctionPass {
         auto inst = dyn_cast<Instruction>(getelm->getOperand(0));
         std::string data_str;
         llvm::raw_string_ostream ss(data_str);
+
         auto xyz = inst->getType()->getPointerElementType()->getScalarType()->getStructName();
         //fprintf(stderr, "Type of '%s'\n", xyz.str().c_str());
-        if(xyz == "struct.rtosc::Port")
-            return true;
-        return false;
+        return xyz == "struct.rtosc::Port";
     }
 
     bool isName(GetElementPtrInst *getelm)
@@ -688,18 +687,13 @@ struct ExtractRtosc : public FunctionPass {
         auto inst = dyn_cast<Instruction>(getelm->getOperand(0));
         std::string data_str;
         llvm::raw_string_ostream ss(data_str);
-        auto type = inst->getType()->getArrayElementType();
-        if(type->isArrayTy())
-            return false;
-        string name;
-        if(type->isArrayTy())
-            name = type->getPointerElementType()->getStructName().str();
-        else
-            name =  type->getStructName().str();
 
-        if(name != "struct.rtosc::Port")
-            return false;
-        return true;
+        string name;
+        if(inst->getType()->getTypeID() == Type::TypeID::PointerTyID &&
+           inst->getType()->getPointerElementType()->getScalarType()->isStructTy())
+            name = inst->getType()->getPointerElementType()->getScalarType()->getStructName().str();
+
+        return name == "struct.rtosc::Port";
     }
     bool isMeta(GetElementPtrInst *getelm)
     {
@@ -710,18 +704,13 @@ struct ExtractRtosc : public FunctionPass {
         auto inst = dyn_cast<Instruction>(getelm->getOperand(0));
         std::string data_str;
         llvm::raw_string_ostream ss(data_str);
-        auto type = inst->getType()->getArrayElementType();
-        if(type->isArrayTy())
-            return false;
-        string name;
-        if(type->isArrayTy())
-            name = type->getPointerElementType()->getStructName().str();
-        else
-            name =  type->getStructName().str();
 
-        if(name != "struct.rtosc::Port")
-            return false;
-        return true;
+        string name;
+        if(inst->getType()->getTypeID() == Type::TypeID::PointerTyID &&
+            inst->getType()->getPointerElementType()->getScalarType()->isStructTy())
+            name = inst->getType()->getPointerElementType()->getScalarType()->getStructName().str();
+
+        return name == "struct.rtosc::Port";
     }
 
     GetElementPtrInst *runOnCallInst(GetElementPtrInst *getelm)

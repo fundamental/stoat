@@ -161,7 +161,7 @@ struct ExtractCallGraph : public FunctionPass {
     std::string runOnCallInst(CallInst *call, Function &Fn)
     {
         auto fn2  = call->getCalledFunction();
-        auto it   = call->getCalledValue();
+        auto it   = call->getCalledOperand();
         auto it2  = dyn_cast<GlobalAlias>(it);
         auto load = dyn_cast<LoadInst>(it);
         string vtable_call_name = "";

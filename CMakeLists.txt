@@ -16,7 +16,7 @@ option(DISABLE_LDCONFIG "Disable running ldconfig on install")
 link_directories(${LLVM_LIB_DIR})
 include_directories(${LLVM_INCLUDE_DIRS})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_DEFINITIONS} -fno-rtti -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_DEFINITIONS} -fno-rtti -std=c++17")
 message(status "Build Flags '${CMAKE_CXX_FLAGS}'")
 
 add_library(stoat SHARED src/llvm-passes.cpp)

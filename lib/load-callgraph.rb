@@ -14,6 +14,17 @@ def merge_maps(mapa, mapb)
     end
 end
 
+def get_version
+  opt = "opt"
+  vout = `#{opt} -version`
+  major_version = 12 #assume it behaves like LLVM 12.0.0 or earlier
+  re = /LLVM version[^0-9]*([0-9]+)\.[0-9]+\.[0-9]+/
+  vout.each_line do |ln|
+    m = re.match(ln)
+    major_version = m[1].to_i if(m)
+  end
+  return major_version
+end
 
 def load_callgraph(opt, library, files)
     callgraph = Hash.new
@@ -22,24 +33,29 @@ def load_callgraph(opt, library, files)
     vtable_information = Hash.new
     rtosc_information = Array.new
 
+    extra_flags = ""
+    extra_flags = "-enable-new-pm=0" if(get_version >= 13)
+    optt        = "#{opt} #{extra_flags}"
+
+
     #Gather All Information from bitcode files
     files.each do |f|
         $stderr.puts "Parsing '#{f}'..."
 
         cg = Thread.new {
-            `#{opt} -load #{library} --extract-callgraph < #{f} > /dev/null 2> stoat_callgraph.txt`
+            `#{optt} -load #{library} --extract-callgraph < #{f} > /dev/null 2> stoat_callgraph.txt`
         }
         an = Thread.new {
-            `#{opt} -load #{library} --extract-annotations < #{f} > /dev/null 2> stoat_annotations.txt`
+            `#{optt} -load #{library} --extract-annotations < #{f} > /dev/null 2> stoat_annotations.txt`
         }
         ch = Thread.new {
-            `#{opt} -load #{library} --extract-class-hierarchy < #{f} > /dev/null 2> stoat_class.txt`
+            `#{optt} -load #{library} --extract-class-hierarchy < #{f} > /dev/null 2> stoat_class.txt`
         }
         vt = Thread.new {
-            `#{opt} -load #{library} --extract-vtables < #{f} > /dev/null 2> stoat_vtable.txt`
+            `#{optt} -load #{library} --extract-vtables < #{f} > /dev/null 2> stoat_vtable.txt`
         }
         rt = Thread.new {
-            `#{opt} -load #{library} --extract-rtosc < #{f} > /dev/null 2> stoat_rtosc.txt`
+            `#{optt} -load #{library} --extract-rtosc < #{f} > /dev/null 2> stoat_rtosc.txt`
         }
         cg.join
         an.join
